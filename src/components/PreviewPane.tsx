@@ -16,11 +16,46 @@ type View = {
   y: number;
 };
 
-function clampZoom(value: number) {
-  return Math.min(
-    MAX_ZOOM,
-    Math.max(MIN_ZOOM, Math.round(value * 1000) / 1000),
+function roundZoom(value: number) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function clampRelativeZoom(value: number) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, roundZoom(value)));
+}
+
+function fitScale(
+  viewport: HTMLElement | null,
+  content: HTMLElement | null,
+): number {
+  if (!viewport || !content) return 1;
+  const width = content.offsetWidth;
+  const height = content.offsetHeight;
+  if (width <= 0 || height <= 0) return 1;
+  return roundZoom(
+    Math.min(viewport.clientWidth / width, viewport.clientHeight / height),
   );
+}
+
+function relativeZoom(
+  viewport: HTMLElement | null,
+  content: HTMLElement | null,
+  zoom: number,
+): number {
+  const fit = fitScale(viewport, content);
+  return fit > 0 ? zoom / fit : 1;
+}
+
+function centeredPan(
+  viewport: HTMLElement | null,
+  content: HTMLElement | null,
+  zoom: number,
+): Pick<View, "x" | "y"> {
+  if (!viewport || !content) return { x: 0, y: 0 };
+  return {
+    x: (viewport.clientWidth - content.offsetWidth * zoom) / 2,
+    y: (viewport.clientHeight - content.offsetHeight * zoom) / 2,
+  };
 }
 
 function mountSvg(host: HTMLElement, svg: string) {
@@ -54,7 +89,7 @@ export function PreviewPane({
     origX: number;
     origY: number;
   } | null>(null);
-  const centeredRef = useRef(false);
+  const fitModeRef = useRef(true);
 
   const [view, setView] = useState<View>(viewRef.current);
   const [dragging, setDragging] = useState(false);
@@ -66,20 +101,11 @@ export function PreviewPane({
     setView(next);
   }
 
-  function centeredPan(zoom: number): Pick<View, "x" | "y"> {
-    const viewport = viewportRef.current;
-    const content = contentRef.current;
-    if (!viewport || !content) return { x: 0, y: 0 };
-    return {
-      x: (viewport.clientWidth - content.offsetWidth * zoom) / 2,
-      y: (viewport.clientHeight - content.offsetHeight * zoom) / 2,
-    };
-  }
-
   function zoomAt(nextZoom: number, originX: number, originY: number) {
     const current = viewRef.current;
-    const zoom = clampZoom(nextZoom);
+    const zoom = roundZoom(nextZoom);
     if (zoom === current.zoom) return;
+    fitModeRef.current = false;
     commit({
       zoom,
       x: originX - ((originX - current.x) / current.zoom) * zoom,
@@ -89,14 +115,26 @@ export function PreviewPane({
 
   function zoomBy(delta: number) {
     const viewport = viewportRef.current;
+    const content = contentRef.current;
     const originX = viewport ? viewport.clientWidth / 2 : 0;
     const originY = viewport ? viewport.clientHeight / 2 : 0;
-    zoomAt(viewRef.current.zoom + delta, originX, originY);
+    const fit = fitScale(viewport, content);
+    zoomAt(
+      clampRelativeZoom(
+        relativeZoom(viewport, content, viewRef.current.zoom) + delta,
+      ) * fit,
+      originX,
+      originY,
+    );
   }
 
   function resetView() {
-    const zoom = 1;
-    commit({ zoom, ...centeredPan(zoom) });
+    fitModeRef.current = true;
+    const zoom = fitScale(viewportRef.current, contentRef.current);
+    commit({
+      zoom,
+      ...centeredPan(viewportRef.current, contentRef.current, zoom),
+    });
   }
 
   useLayoutEffect(() => {
@@ -107,25 +145,16 @@ export function PreviewPane({
     }
 
     if (!svg || empty) {
-      centeredRef.current = false;
+      fitModeRef.current = true;
       viewRef.current = { zoom: 1, x: 0, y: 0 };
       setView(viewRef.current);
       return;
     }
-    if (centeredRef.current) return;
-    centeredRef.current = true;
-    const viewport = viewportRef.current;
-    const content = contentRef.current;
+    if (!fitModeRef.current) return;
+    const zoom = fitScale(viewportRef.current, contentRef.current);
     const next = {
-      zoom: 1,
-      x:
-        viewport && content
-          ? (viewport.clientWidth - content.offsetWidth) / 2
-          : 0,
-      y:
-        viewport && content
-          ? (viewport.clientHeight - content.offsetHeight) / 2
-          : 0,
+      zoom,
+      ...centeredPan(viewportRef.current, contentRef.current, zoom),
     };
     viewRef.current = next;
     setView(next);
@@ -138,6 +167,7 @@ export function PreviewPane({
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
       const current = viewRef.current;
+      const content = contentRef.current;
       const rect = viewport.getBoundingClientRect();
       const originX = event.clientX - rect.left;
       const originY = event.clientY - rect.top;
@@ -145,8 +175,15 @@ export function PreviewPane({
         event.deltaMode === WheelEvent.DOM_DELTA_LINE
           ? event.deltaY * 16
           : event.deltaY;
-      const zoom = clampZoom(current.zoom * Math.exp(-delta * 0.002));
+      const fit = fitScale(viewport, content);
+      const zoom = roundZoom(
+        clampRelativeZoom(
+          relativeZoom(viewport, content, current.zoom) *
+            Math.exp(-delta * 0.002),
+        ) * fit,
+      );
       if (zoom === current.zoom) return;
+      fitModeRef.current = false;
       const next = {
         zoom,
         x: originX - ((originX - current.x) / current.zoom) * zoom,
@@ -159,6 +196,23 @@ export function PreviewPane({
     viewport.addEventListener("wheel", onWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [canInteract]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const observer = new ResizeObserver(() => {
+      if (!fitModeRef.current) return;
+      const zoom = fitScale(viewport, contentRef.current);
+      const next = {
+        zoom,
+        ...centeredPan(viewport, contentRef.current, zoom),
+      };
+      viewRef.current = next;
+      setView(next);
+    });
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!canInteract || event.button !== 0) return;
@@ -177,6 +231,9 @@ export function PreviewPane({
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    if (event.clientX !== drag.x || event.clientY !== drag.y) {
+      fitModeRef.current = false;
+    }
     commit({
       zoom: viewRef.current.zoom,
       x: drag.origX + event.clientX - drag.x,
@@ -189,6 +246,12 @@ export function PreviewPane({
     dragRef.current = null;
     setDragging(false);
   }
+
+  const userZoom = relativeZoom(
+    viewportRef.current,
+    contentRef.current,
+    view.zoom,
+  );
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col">
@@ -203,23 +266,23 @@ export function PreviewPane({
           <div className="flex items-center gap-0.5 normal-case tracking-normal">
             <ZoomButton
               label="Zoom out"
-              disabled={!canInteract || view.zoom <= MIN_ZOOM}
+              disabled={!canInteract || userZoom <= MIN_ZOOM}
               onClick={() => zoomBy(-ZOOM_STEP)}
             >
               −
             </ZoomButton>
             <button
               type="button"
-              title="Reset view"
+              title="Fit to view"
               disabled={!canInteract}
               onClick={resetView}
               className="min-w-10 rounded px-1 text-center text-[11px] font-medium tabular-nums text-zinc-400 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-zinc-400"
             >
-              {Math.round(view.zoom * 100)}%
+              {`${Math.round(userZoom * 100)}%`}
             </button>
             <ZoomButton
               label="Zoom in"
-              disabled={!canInteract || view.zoom >= MAX_ZOOM}
+              disabled={!canInteract || userZoom >= MAX_ZOOM}
               onClick={() => zoomBy(ZOOM_STEP)}
             >
               +
