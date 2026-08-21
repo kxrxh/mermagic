@@ -5,6 +5,11 @@ import { Toolbar } from "@/components/Toolbar";
 import { copyPngToClipboard, downloadPng, downloadSvg } from "@/lib/export";
 import { formatMermaidError, renderMermaid } from "@/lib/mermaid";
 import { DEFAULT_SAMPLE_ID, getSample } from "@/lib/samples";
+import {
+  readShareFromLocation,
+  shareUrl,
+  writeShareToLocation,
+} from "@/lib/share";
 import { DEFAULT_THEME_ID, getTheme } from "@/lib/themes";
 
 const CODE_KEY = "mermagic:code:v2";
@@ -26,21 +31,25 @@ function writeStored(key: string, value: string) {
   }
 }
 
-function initialCode(): string {
-  const stored = readStored(CODE_KEY);
-  if (stored?.trim()) return stored;
-  return getSample(DEFAULT_SAMPLE_ID).code;
-}
-
-function initialThemeId(): string {
-  const stored = readStored(THEME_KEY);
-  if (stored) return getTheme(stored).id;
-  return DEFAULT_THEME_ID;
+function initialState(): { code: string; themeId: string } {
+  const shared = readShareFromLocation();
+  if (shared) {
+    return { code: shared.code, themeId: getTheme(shared.themeId).id };
+  }
+  const storedCode = readStored(CODE_KEY);
+  const storedTheme = readStored(THEME_KEY);
+  return {
+    code: storedCode?.trim() ? storedCode : getSample(DEFAULT_SAMPLE_ID).code,
+    themeId: storedTheme ? getTheme(storedTheme).id : DEFAULT_THEME_ID,
+  };
 }
 
 export default function App() {
-  const [code, setCode] = useState(initialCode);
-  const [themeId, setThemeId] = useState(initialThemeId);
+  const [{ code, themeId }, setState] = useState(initialState);
+  const setCode = (next: string) =>
+    setState((current) => ({ ...current, code: next }));
+  const setThemeId = (next: string) =>
+    setState((current) => ({ ...current, themeId: next }));
   const [svg, setSvg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
@@ -57,6 +66,23 @@ export default function App() {
   useEffect(() => {
     writeStored(THEME_KEY, themeId);
   }, [themeId]);
+
+  useEffect(() => {
+    writeShareToLocation({ code, themeId });
+  }, [code, themeId]);
+
+  useEffect(() => {
+    const applyHash = () => {
+      const shared = readShareFromLocation();
+      if (!shared) return;
+      setState({
+        code: shared.code,
+        themeId: getTheme(shared.themeId).id,
+      });
+    };
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
 
   useEffect(() => {
     const gen = ++generation.current;
@@ -107,6 +133,12 @@ export default function App() {
               includeBackground ? theme.background : null,
             );
           }
+        }}
+        canShare={!empty}
+        onShare={async () => {
+          const state = { code, themeId };
+          writeShareToLocation(state);
+          await navigator.clipboard.writeText(shareUrl(state));
         }}
       />
       <main className="grid min-h-0 flex-1 grid-cols-2">

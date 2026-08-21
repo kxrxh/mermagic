@@ -12,6 +12,8 @@ type ToolbarProps = {
   onExportSvg: () => void;
   onExportPng: () => void;
   onCopyPng: () => Promise<void>;
+  canShare: boolean;
+  onShare: () => Promise<void>;
 };
 
 export function Toolbar({
@@ -24,8 +26,11 @@ export function Toolbar({
   onExportSvg,
   onExportPng,
   onCopyPng,
+  canShare,
+  onShare,
 }: ToolbarProps) {
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   return (
     <header className="flex flex-nowrap items-center gap-3 border-b border-white/10 bg-[#0d0f14] px-3 py-2">
@@ -109,6 +114,24 @@ export function Toolbar({
           className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {copied ? "Copied" : "Copy"}
+        </button>
+        <button
+          type="button"
+          disabled={!canShare || linkCopied}
+          title="Copy shareable URL"
+          onClick={() => {
+            void onShare()
+              .then(() => {
+                setLinkCopied(true);
+                window.setTimeout(() => setLinkCopied(false), 1500);
+              })
+              .catch(() => {
+                // Clipboard write can fail without HTTPS or permission.
+              });
+          }}
+          className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {linkCopied ? "Copied" : "Share"}
         </button>
       </div>
     </header>
