@@ -11,6 +11,7 @@ type ToolbarProps = {
   onIncludeBackgroundChange: (value: boolean) => void;
   onExportSvg: () => void;
   onExportPng: () => void;
+  onExportPdf: () => void;
   onCopyPng: () => Promise<void>;
   canShare: boolean;
   onShare: () => Promise<void>;
@@ -25,6 +26,7 @@ export function Toolbar({
   onIncludeBackgroundChange,
   onExportSvg,
   onExportPng,
+  onExportPdf,
   onCopyPng,
   canShare,
   onShare,
@@ -96,6 +98,14 @@ export function Toolbar({
           className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40"
         >
           PNG
+        </button>
+        <button
+          type="button"
+          disabled={!canExport}
+          onClick={onExportPdf}
+          className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          PDF
         </button>
         <button
           type="button"

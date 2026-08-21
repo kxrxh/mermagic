@@ -1,3 +1,7 @@
+import { PDFDocument } from "pdf-lib";
+
+const MAX_PDF_PAGE = 14400;
+
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -165,4 +169,34 @@ export async function copyPngToClipboard(
       "image/png": png,
     }),
   ]);
+}
+
+export async function downloadPdf(
+  svg: string,
+  background: string | null,
+  filename = "diagram.pdf",
+  scale = 2,
+) {
+  const el = prepareSvg(svg, background);
+  const { width, height } = svgSize(el);
+  const png = await rasterizePng(svg, background, scale);
+  const pdf = await PDFDocument.create();
+  const image = await pdf.embedPng(new Uint8Array(await png.arrayBuffer()));
+  const fit = Math.min(1, MAX_PDF_PAGE / width, MAX_PDF_PAGE / height);
+  const pageWidth = width * fit;
+  const pageHeight = height * fit;
+  const page = pdf.addPage([pageWidth, pageHeight]);
+  page.drawImage(image, {
+    x: 0,
+    y: 0,
+    width: pageWidth,
+    height: pageHeight,
+  });
+  const bytes = await pdf.save();
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  triggerDownload(
+    new Blob([copy.buffer], { type: "application/pdf" }),
+    filename,
+  );
 }

@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorPane } from "@/components/EditorPane";
 import { PreviewPane } from "@/components/PreviewPane";
 import { Toolbar } from "@/components/Toolbar";
-import { copyPngToClipboard, downloadPng, downloadSvg } from "@/lib/export";
+import {
+  copyPngToClipboard,
+  downloadPdf,
+  downloadPng,
+  downloadSvg,
+} from "@/lib/export";
 import { formatMermaidError, renderMermaid } from "@/lib/mermaid";
 import { DEFAULT_SAMPLE_ID, getSample } from "@/lib/samples";
 import {
@@ -87,7 +92,12 @@ export default function App() {
   useEffect(() => {
     const gen = ++generation.current;
 
-    if (!code.trim()) return;
+    if (!code.trim()) {
+      setSvg(null);
+      setError(null);
+      setRendering(false);
+      return;
+    }
 
     const timer = window.setTimeout(() => {
       setRendering(true);
@@ -99,6 +109,7 @@ export default function App() {
           setError(null);
         } catch (err) {
           if (generation.current !== gen) return;
+          setSvg(null);
           setError(formatMermaidError(err));
         } finally {
           if (generation.current === gen) setRendering(false);
@@ -125,6 +136,10 @@ export default function App() {
         onExportPng={() => {
           if (svg)
             void downloadPng(svg, includeBackground ? theme.background : null);
+        }}
+        onExportPdf={() => {
+          if (svg)
+            void downloadPdf(svg, includeBackground ? theme.background : null);
         }}
         onCopyPng={async () => {
           if (svg) {
