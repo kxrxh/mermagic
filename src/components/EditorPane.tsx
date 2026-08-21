@@ -2,6 +2,7 @@ import { EditorView } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { editorTheme } from "@/lib/editorTheme";
+import { mermaidCompleteExtensions } from "@/lib/mermaidComplete";
 import { mermaidHighlightExtensions } from "@/lib/mermaidHighlight";
 import { mermaidLintExtensions } from "@/lib/mermaidLint";
 
@@ -14,6 +15,7 @@ type EditorPaneProps = {
 const editorExtensions = [
   ...mermaidHighlightExtensions,
   ...mermaidLintExtensions,
+  ...mermaidCompleteExtensions,
   EditorView.lineWrapping,
 ];
 

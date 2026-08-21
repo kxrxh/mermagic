@@ -85,6 +85,55 @@ export const editorTheme = EditorView.theme(
       maxWidth: "360px",
       padding: "6px 8px",
     },
+    ".cm-tooltip-autocomplete": {
+      "& > ul": {
+        fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+        fontSize: "12px",
+        maxHeight: "16em",
+      },
+      "& > ul > li": {
+        padding: "2px 8px",
+        lineHeight: "1.45",
+      },
+      "& > ul > li[aria-selected]": {
+        backgroundColor: "rgba(34, 211, 238, 0.16)",
+        color: "#e4e4e7",
+      },
+    },
+    ".cm-tooltip.cm-completionInfo": {
+      backgroundColor: "#161922",
+      border: "1px solid rgba(255, 255, 255, 0.1)",
+      color: "#a1a1aa",
+      fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+      fontSize: "11px",
+      maxWidth: "280px",
+    },
+    ".cm-completionMatchedText": {
+      color: "#22d3ee",
+      textDecoration: "none",
+      fontWeight: "600",
+    },
+    ".cm-completionDetail": {
+      color: "#71717a",
+      fontStyle: "normal",
+      marginLeft: "0.6em",
+    },
+    ".cm-completionIcon": {
+      color: "#52525b",
+      width: "1.2em",
+    },
+    ".cm-completionIcon-type": {
+      color: "#22d3ee",
+    },
+    ".cm-completionIcon-keyword": {
+      color: "#818cf8",
+    },
+    ".cm-completionIcon-function": {
+      color: "#c084fc",
+    },
+    ".cm-completionIcon-variable": {
+      color: "#67e8f9",
+    },
   },
   { dark: true },
 );
