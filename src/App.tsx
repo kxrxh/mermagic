@@ -8,6 +8,18 @@ import {
   downloadPng,
   downloadSvg,
 } from "@/lib/export";
+import {
+  flushCurrent,
+  type HistorySnapshot,
+  loadHistory,
+  openOrCreate,
+  persistHistory,
+  removeEntry,
+  renameEntry,
+  startNew,
+  togglePin,
+  upsertCurrent,
+} from "@/lib/history";
 import { formatMermaidError, renderMermaid } from "@/lib/mermaid";
 import { DEFAULT_SAMPLE_ID, getSample } from "@/lib/samples";
 import {
@@ -36,7 +48,7 @@ function writeStored(key: string, value: string) {
   }
 }
 
-function initialState(): { code: string; themeId: string } {
+function initialEditor(): { code: string; themeId: string } {
   const shared = readShareFromLocation();
   if (shared) {
     return { code: shared.code, themeId: getTheme(shared.themeId).id };
@@ -49,20 +61,68 @@ function initialState(): { code: string; themeId: string } {
   };
 }
 
+function bootstrapApp(): {
+  editor: { code: string; themeId: string };
+  history: HistorySnapshot;
+} {
+  const editor = initialEditor();
+  let snapshot = loadHistory();
+  const shared = readShareFromLocation();
+  const storedCode = readStored(CODE_KEY);
+  if (shared && storedCode?.trim()) {
+    snapshot = flushCurrent(snapshot, {
+      code: storedCode,
+      themeId: getTheme(readStored(THEME_KEY) ?? DEFAULT_THEME_ID).id,
+    });
+  }
+  snapshot = persistHistory(openOrCreate(snapshot, editor));
+  return { editor, history: snapshot };
+}
+
 export default function App() {
-  const [{ code, themeId }, setState] = useState(initialState);
+  const [boot] = useState(bootstrapApp);
+  const [{ code, themeId }, setState] = useState(boot.editor);
   const setCode = (next: string) =>
     setState((current) => ({ ...current, code: next }));
   const setThemeId = (next: string) =>
     setState((current) => ({ ...current, themeId: next }));
+  const [history, setHistory] = useState(boot.history);
   const [svg, setSvg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [includeBackground, setIncludeBackground] = useState(true);
   const generation = useRef(0);
+  const skipDebounce = useRef(true);
+  const debounceRef = useRef(0);
+  const historyRef = useRef(history);
+  const stateRef = useRef({ code, themeId });
+  historyRef.current = history;
+  stateRef.current = { code, themeId };
 
   const theme = useMemo(() => getTheme(themeId), [themeId]);
   const empty = !code.trim();
+
+  const commitHistory = (next: HistorySnapshot) => {
+    const persisted = persistHistory(next);
+    historyRef.current = persisted;
+    setHistory(persisted);
+    return persisted;
+  };
+
+  const switchTo = (next: { code: string; themeId: string }) => {
+    window.clearTimeout(debounceRef.current);
+    const flushed = flushCurrent(historyRef.current, stateRef.current);
+    const opened = openOrCreate(flushed, next);
+    commitHistory(opened);
+    const editor = {
+      code: next.code,
+      themeId: getTheme(next.themeId).id,
+    };
+    stateRef.current = editor;
+    setState(editor);
+  };
+  const switchToRef = useRef(switchTo);
+  switchToRef.current = switchTo;
 
   useEffect(() => {
     writeStored(CODE_KEY, code);
@@ -77,16 +137,39 @@ export default function App() {
   }, [code, themeId]);
 
   useEffect(() => {
+    if (skipDebounce.current) {
+      skipDebounce.current = false;
+      return;
+    }
+    debounceRef.current = window.setTimeout(() => {
+      const persisted = persistHistory(
+        upsertCurrent(historyRef.current, { code, themeId }),
+      );
+      historyRef.current = persisted;
+      setHistory(persisted);
+    }, 1000);
+    return () => window.clearTimeout(debounceRef.current);
+  }, [code, themeId]);
+
+  useEffect(() => {
     const applyHash = () => {
       const shared = readShareFromLocation();
       if (!shared) return;
-      setState({
+      switchToRef.current({
         code: shared.code,
         themeId: getTheme(shared.themeId).id,
       });
     };
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
+  useEffect(() => {
+    const flush = () => {
+      persistHistory(flushCurrent(historyRef.current, stateRef.current));
+    };
+    window.addEventListener("beforeunload", flush);
+    return () => window.removeEventListener("beforeunload", flush);
   }, []);
 
   useEffect(() => {
@@ -125,7 +208,33 @@ export default function App() {
       <Toolbar
         themeId={theme.id}
         onThemeChange={setThemeId}
-        onSampleSelect={(id) => setCode(getSample(id).code)}
+        onSampleSelect={(id) => switchTo({ code: getSample(id).code, themeId })}
+        history={history.entries}
+        currentHistoryId={history.currentId}
+        onHistoryNew={() => {
+          window.clearTimeout(debounceRef.current);
+          commitHistory(startNew(historyRef.current, stateRef.current));
+          const editor = { ...stateRef.current, code: "" };
+          stateRef.current = editor;
+          setState(editor);
+        }}
+        onHistoryRestore={(id) => {
+          if (id === historyRef.current.currentId) return;
+          const entry = historyRef.current.entries.find(
+            (item) => item.id === id,
+          );
+          if (!entry) return;
+          switchTo({ code: entry.code, themeId: entry.themeId });
+        }}
+        onHistoryPin={(id) => {
+          commitHistory(togglePin(historyRef.current, id));
+        }}
+        onHistoryRename={(id, title) => {
+          commitHistory(renameEntry(historyRef.current, id, title));
+        }}
+        onHistoryDelete={(id) => {
+          commitHistory(removeEntry(historyRef.current, id));
+        }}
         canExport={!empty && Boolean(svg)}
         includeBackground={includeBackground}
         onIncludeBackgroundChange={setIncludeBackground}

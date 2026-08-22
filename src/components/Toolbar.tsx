@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
+import { HistoryPanel } from "@/components/HistoryPanel";
 import { ThemePicker } from "@/components/ThemePicker";
+import type { HistoryEntry } from "@/lib/history";
 import { SAMPLES } from "@/lib/samples";
 
 type ToolbarProps = {
   themeId: string;
   onThemeChange: (id: string) => void;
   onSampleSelect: (id: string) => void;
+  history: HistoryEntry[];
+  currentHistoryId: string | null;
+  onHistoryNew: () => void;
+  onHistoryRestore: (id: string) => void;
+  onHistoryPin: (id: string) => void;
+  onHistoryRename: (id: string, title: string) => void;
+  onHistoryDelete: (id: string) => void;
   canExport: boolean;
   includeBackground: boolean;
   onIncludeBackgroundChange: (value: boolean) => void;
@@ -21,6 +30,13 @@ export function Toolbar({
   themeId,
   onThemeChange,
   onSampleSelect,
+  history,
+  currentHistoryId,
+  onHistoryNew,
+  onHistoryRestore,
+  onHistoryPin,
+  onHistoryRename,
+  onHistoryDelete,
   canExport,
   includeBackground,
   onIncludeBackgroundChange,
@@ -71,46 +87,63 @@ export function Toolbar({
         <ThemePicker value={themeId} onChange={onThemeChange} />
       </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
-        <label className="flex cursor-pointer items-center gap-1.5 pr-1 text-xs text-zinc-400 select-none">
-          <input
-            type="checkbox"
-            checked={includeBackground}
-            onChange={(event) =>
-              onIncludeBackgroundChange(event.target.checked)
-            }
-            className="h-3.5 w-3.5 accent-cyan-400"
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="flex h-8">
+          <button
+            type="button"
+            title="New diagram"
+            onClick={onHistoryNew}
+            className="flex items-center gap-1.5 rounded-l-md border border-white/10 bg-white/[0.04] px-2.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10"
+          >
+            <PlusIcon />
+            New
+          </button>
+          <HistoryPanel
+            embedded
+            entries={history}
+            currentId={currentHistoryId}
+            onNew={onHistoryNew}
+            onRestore={onHistoryRestore}
+            onPin={onHistoryPin}
+            onRename={onHistoryRename}
+            onDelete={onHistoryDelete}
           />
-          Background
-        </label>
-        <button
-          type="button"
-          disabled={!canExport}
-          onClick={onExportSvg}
-          className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          SVG
-        </button>
-        <button
-          type="button"
-          disabled={!canExport}
-          onClick={onExportPng}
-          className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          PNG
-        </button>
-        <button
-          type="button"
-          disabled={!canExport}
-          onClick={onExportPdf}
-          className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          PDF
-        </button>
-        <button
-          type="button"
-          disabled={!canExport || copied}
+        </div>
+
+        <Divider />
+
+        <div className="flex h-8 overflow-hidden rounded-md border border-white/10 bg-white/[0.04]">
+          <button
+            type="button"
+            title={
+              includeBackground
+                ? "Background included in export"
+                : "Export without background"
+            }
+            aria-pressed={includeBackground}
+            onClick={() => onIncludeBackgroundChange(!includeBackground)}
+            className={`flex w-8 items-center justify-center border-r transition ${
+              includeBackground
+                ? "border-white/10 bg-cyan-400/15 text-cyan-100"
+                : "border-white/10 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"
+            }`}
+          >
+            <BackgroundIcon />
+          </button>
+          <SegmentButton disabled={!canExport} onClick={onExportSvg}>
+            SVG
+          </SegmentButton>
+          <SegmentButton disabled={!canExport} onClick={onExportPng}>
+            PNG
+          </SegmentButton>
+          <SegmentButton disabled={!canExport} last onClick={onExportPdf}>
+            PDF
+          </SegmentButton>
+        </div>
+
+        <ToolButton
           title="Copy PNG to clipboard"
+          disabled={!canExport || copied}
           onClick={() => {
             void onCopyPng()
               .then(() => {
@@ -121,14 +154,17 @@ export function Toolbar({
                 // Clipboard write can fail without HTTPS or permission.
               });
           }}
-          className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
+          {copied ? <CheckIcon /> : <CopyIcon />}
           {copied ? "Copied" : "Copy"}
-        </button>
-        <button
-          type="button"
-          disabled={!canShare || linkCopied}
+        </ToolButton>
+
+        <Divider />
+
+        <ToolButton
           title="Copy shareable URL"
+          accent
+          disabled={!canShare || linkCopied}
           onClick={() => {
             void onShare()
               .then(() => {
@@ -139,12 +175,154 @@ export function Toolbar({
                 // Clipboard write can fail without HTTPS or permission.
               });
           }}
-          className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
+          {linkCopied ? <CheckIcon /> : <ShareIcon />}
           {linkCopied ? "Copied" : "Share"}
-        </button>
+        </ToolButton>
       </div>
     </header>
+  );
+}
+
+function Divider() {
+  return <div className="h-5 w-px bg-white/10" aria-hidden="true" />;
+}
+
+function ToolButton({
+  children,
+  title,
+  disabled,
+  accent,
+  onClick,
+}: {
+  children: ReactNode;
+  title?: string;
+  disabled?: boolean;
+  accent?: boolean;
+  onClick: () => void;
+}) {
+  const tone = accent
+    ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
+    : "border-white/10 bg-white/[0.04] text-zinc-200 hover:border-white/20 hover:bg-white/10";
+
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${tone}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SegmentButton({
+  children,
+  disabled,
+  last,
+  onClick,
+}: {
+  children: string;
+  disabled?: boolean;
+  last?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`h-full min-w-11 px-2.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 ${
+        last ? "" : "border-r border-white/10"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        d="M8 3.2v9.6M3.2 8h9.6"
+      />
+    </svg>
+  );
+}
+
+function BackgroundIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+      <rect
+        x="2"
+        y="2"
+        width="12"
+        height="12"
+        rx="1.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+      />
+      <path fill="currentColor" d="M2.6 2.6h5.4v5.4H2.6zM8 8h5.4v5.4H8z" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+        d="M5.5 5.2h7.2v8.3H5.5z"
+      />
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        d="M3.3 10.8V2.5h7.5"
+      />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9.2 4.2 13 8l-3.8 3.8M13 8H6.4A3.4 3.4 0 0 0 3 11.4V12"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.4 8.3 6.5 11.4 12.6 4.6"
+      />
+    </svg>
   );
 }
 
