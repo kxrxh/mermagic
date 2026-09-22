@@ -9,6 +9,12 @@ import {
   downloadSvg,
 } from "@/lib/export";
 import {
+  editFlowNode,
+  type FlowGraph,
+  findNodeSource,
+  type SourceRange,
+} from "@/lib/flowchart";
+import {
   flushCurrent,
   type HistorySnapshot,
   loadHistory,
@@ -20,7 +26,7 @@ import {
   togglePin,
   upsertCurrent,
 } from "@/lib/history";
-import { formatMermaidError, renderMermaid } from "@/lib/mermaid";
+import { formatMermaidError, renderInteractiveMermaid } from "@/lib/mermaid";
 import { DEFAULT_SAMPLE_ID, getSample } from "@/lib/samples";
 import {
   readShareFromLocation,
@@ -88,6 +94,11 @@ export default function App() {
     setState((current) => ({ ...current, themeId: next }));
   const [history, setHistory] = useState(boot.history);
   const [svg, setSvg] = useState<string | null>(null);
+  const [graph, setGraph] = useState<FlowGraph | null>(null);
+  const [renderedCode, setRenderedCode] = useState("");
+  const [sourceSelection, setSourceSelection] = useState<SourceRange | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [includeBackground, setIncludeBackground] = useState(true);
@@ -177,6 +188,7 @@ export default function App() {
 
     if (!code.trim()) {
       setSvg(null);
+      setGraph(null);
       setError(null);
       setRendering(false);
       return;
@@ -186,13 +198,16 @@ export default function App() {
       setRendering(true);
       void (async () => {
         try {
-          const next = await renderMermaid(code, theme);
+          const next = await renderInteractiveMermaid(code, theme);
           if (generation.current !== gen) return;
-          setSvg(next);
+          setSvg(next.svg);
+          setGraph(next.graph);
+          setRenderedCode(code);
           setError(null);
         } catch (err) {
           if (generation.current !== gen) return;
           setSvg(null);
+          setGraph(null);
           setError(formatMermaidError(err));
         } finally {
           if (generation.current === gen) setRendering(false);
@@ -270,12 +285,19 @@ export default function App() {
           code={code}
           error={empty ? null : error}
           onChange={setCode}
+          sourceSelection={sourceSelection}
         />
         <PreviewPane
+          key={history.currentId}
           svg={empty ? null : svg}
           background={theme.background}
           rendering={!empty && rendering}
           empty={empty}
+          graph={graph}
+          code={code}
+          interactive={!rendering && code === renderedCode && !error}
+          onSelectNode={(id) => setSourceSelection(findNodeSource(code, id))}
+          onEditNode={(id, patch) => setCode(editFlowNode(code, id, patch))}
         />
       </main>
     </div>

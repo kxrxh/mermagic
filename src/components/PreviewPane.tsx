@@ -5,6 +5,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { FlowInteractions } from "@/components/FlowInteractions";
+import type { FlowGraph, NodeEdit } from "@/lib/flowchart";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
@@ -71,6 +73,11 @@ type PreviewPaneProps = {
   background: string;
   rendering: boolean;
   empty: boolean;
+  graph: FlowGraph | null;
+  code: string;
+  interactive: boolean;
+  onSelectNode: (id: string) => void;
+  onEditNode: (id: string, patch: NodeEdit) => void;
 };
 
 export function PreviewPane({
@@ -78,6 +85,11 @@ export function PreviewPane({
   background,
   rendering,
   empty,
+  graph,
+  code,
+  interactive,
+  onSelectNode,
+  onEditNode,
 }: PreviewPaneProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -216,6 +228,11 @@ export function PreviewPane({
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!canInteract || event.button !== 0) return;
+    if (
+      event.target instanceof Element &&
+      event.target.closest("[data-flow-node]")
+    )
+      return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = {
@@ -290,36 +307,53 @@ export function PreviewPane({
           </div>
         </div>
       </div>
-      <div
-        ref={viewportRef}
-        className="min-h-0 flex-1 overflow-hidden select-none"
-        style={{
-          background,
-          cursor: canInteract ? (dragging ? "grabbing" : "grab") : "default",
-          touchAction: "none",
-        }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
-        {empty && !svg ? (
-          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500">
-            Write Mermaid on the left to see a live diagram.
-          </div>
-        ) : svg ? (
-          <div
-            ref={contentRef}
-            className={`preview-svg origin-top-left will-change-transform ${
-              rendering ? "opacity-60" : "opacity-100"
-            }`}
-            style={{
-              width: "100%",
-              padding: 24,
-              transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
-              transformOrigin: "0 0",
-            }}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={viewportRef}
+          className="h-full overflow-hidden select-none"
+          style={{
+            background,
+            cursor: canInteract ? (dragging ? "grabbing" : "grab") : "default",
+            touchAction: "none",
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        >
+          {empty && !svg ? (
+            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500">
+              Write Mermaid on the left to see a live diagram.
+            </div>
+          ) : svg ? (
+            <div
+              ref={contentRef}
+              className={`preview-svg origin-top-left will-change-transform ${
+                rendering ? "opacity-60" : "opacity-100"
+              }`}
+              style={{
+                width: "100%",
+                padding: 24,
+                transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
+                transformOrigin: "0 0",
+              }}
+            />
+          ) : null}
+        </div>
+        {svg && graph && !empty ? (
+          <FlowInteractions
+            host={contentRef}
+            svg={svg}
+            graph={graph}
+            code={code}
+            enabled={interactive}
+            onSelectNode={onSelectNode}
+            onEditNode={onEditNode}
           />
+        ) : svg && !empty ? (
+          <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-[#11151e]/90 px-3 py-2 text-[11px] text-zinc-400">
+            Node editing and flow tracing are available for flowcharts.
+          </div>
         ) : null}
       </div>
     </section>

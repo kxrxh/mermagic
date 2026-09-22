@@ -1,4 +1,5 @@
 import mermaid from "mermaid";
+import { readFlowGraph } from "@/lib/flowchart";
 import type { DiagramTheme } from "@/lib/themes";
 
 mermaid.initialize({
@@ -57,6 +58,20 @@ export async function renderMermaid(
     const id = `mermagic-${renderCount}`;
     const { svg } = await mermaid.render(id, code);
     return svg;
+  });
+}
+
+export async function renderInteractiveMermaid(
+  code: string,
+  theme: DiagramTheme,
+) {
+  return enqueueMermaid(async () => {
+    configureMermaid(theme);
+    const diagram = await mermaid.mermaidAPI.getDiagramFromText(code);
+    const graph = readFlowGraph(diagram.type, diagram.db);
+    renderCount += 1;
+    const { svg } = await mermaid.render(`mermagic-${renderCount}`, code);
+    return { svg, graph };
   });
 }
 

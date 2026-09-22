@@ -47,6 +47,41 @@ body {
   pointer-events: none;
 }
 
+.preview-svg [data-flow-node] {
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+}
+
+.preview-svg [data-flow-node][aria-disabled="true"] {
+  pointer-events: none;
+}
+
+.preview-svg .flow-dimmed {
+  /* biome-ignore lint/complexity/noImportantStyles: Override Mermaid's generated SVG styles. */
+  opacity: 0.13 !important;
+}
+
+.preview-svg .flow-selected,
+.preview-svg [data-flow-node]:focus-visible {
+  filter: drop-shadow(0 0 5px #22d3ee);
+}
+
+.preview-svg .flow-start {
+  filter: drop-shadow(0 0 6px #34d399);
+}
+
+.preview-svg .flow-end {
+  filter: drop-shadow(0 0 6px #c084fc);
+}
+
+.preview-svg [data-edge].flow-path {
+  /* biome-ignore lint/complexity/noImportantStyles: Override Mermaid's generated SVG styles. */
+  stroke: #22d3ee !important;
+  /* biome-ignore lint/complexity/noImportantStyles: Override Mermaid's generated SVG styles. */
+  stroke-width: 3px !important;
+}
+
 .preview-svg svg {
   display: block;
   width: 100%;
