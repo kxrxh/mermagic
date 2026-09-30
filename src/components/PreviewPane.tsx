@@ -6,7 +6,10 @@ import {
   useState,
 } from "react";
 import { FlowInteractions } from "@/components/FlowInteractions";
+import { Icon } from "@/components/Icon";
+import { ThemePicker } from "@/components/ThemePicker";
 import type { FlowGraph, NodeEdit } from "@/lib/flowchart";
+import { canvasPatternStyle, getTheme } from "@/lib/themes";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
@@ -70,6 +73,8 @@ function mountSvg(host: HTMLElement, svg: string) {
 
 type PreviewPaneProps = {
   svg: string | null;
+  themeId: string;
+  onThemeChange: (id: string) => void;
   background: string;
   rendering: boolean;
   empty: boolean;
@@ -82,6 +87,8 @@ type PreviewPaneProps = {
 
 export function PreviewPane({
   svg,
+  themeId,
+  onThemeChange,
   background,
   rendering,
   empty,
@@ -91,6 +98,7 @@ export function PreviewPane({
   onSelectNode,
   onEditNode,
 }: PreviewPaneProps) {
+  const theme = getTheme(themeId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<View>({ zoom: 1, x: 0, y: 0 });
@@ -271,48 +279,25 @@ export function PreviewPane({
   );
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-col">
-      <div className="flex h-8 items-center justify-between border-b border-white/10 px-3 text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-        Preview
-        <div className="flex items-center gap-2">
-          {rendering ? (
-            <span className="normal-case tracking-normal text-cyan-300/80">
-              Rendering…
-            </span>
-          ) : null}
-          <div className="flex items-center gap-0.5 normal-case tracking-normal">
-            <ZoomButton
-              label="Zoom out"
-              disabled={!canInteract || userZoom <= MIN_ZOOM}
-              onClick={() => zoomBy(-ZOOM_STEP)}
-            >
-              −
-            </ZoomButton>
-            <button
-              type="button"
-              title="Fit to view"
-              disabled={!canInteract}
-              onClick={resetView}
-              className="min-w-10 rounded px-1 text-center text-[11px] font-medium tabular-nums text-zinc-400 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-zinc-400"
-            >
-              {`${Math.round(userZoom * 100)}%`}
-            </button>
-            <ZoomButton
-              label="Zoom in"
-              disabled={!canInteract || userZoom >= MAX_ZOOM}
-              onClick={() => zoomBy(ZOOM_STEP)}
-            >
-              +
-            </ZoomButton>
-          </div>
+    <section className="preview-pane" aria-label="Diagram canvas">
+      <div className="pane-header">
+        <div className="pane-title">
+          <Icon name="canvas" />
+          <span>Canvas</span>
+          <span className="live-badge">
+            <span className="status-dot" />
+            {rendering ? "Updating" : "Live"}
+          </span>
         </div>
+        <ThemePicker value={themeId} onChange={onThemeChange} />
       </div>
       <div className="relative min-h-0 flex-1">
         <div
           ref={viewportRef}
-          className="h-full overflow-hidden select-none"
+          className={`canvas-viewport h-full overflow-hidden select-none ${!theme.dark ? "canvas-light" : ""}`}
           style={{
-            background,
+            backgroundColor: background,
+            ...canvasPatternStyle(theme),
             cursor: canInteract ? (dragging ? "grabbing" : "grab") : "default",
             touchAction: "none",
           }}
@@ -322,8 +307,23 @@ export function PreviewPane({
           onPointerCancel={onPointerUp}
         >
           {empty && !svg ? (
-            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500">
-              Write Mermaid on the left to see a live diagram.
+            <div className="canvas-empty">
+              <span className="empty-diagram-icon">
+                <Icon name="diagram" />
+              </span>
+              <span className="eyebrow">
+                A BLANK CANVAS. A NEW POSSIBILITY.
+              </span>
+              <h2>Every great idea starts somewhere.</h2>
+              <p>
+                Write a little Mermaid in the source editor,
+                <br />
+                or pick a template to get things flowing.
+              </p>
+              <span className="empty-hint">
+                <Icon name="code" />
+                Your diagram appears here as you type.
+              </span>
             </div>
           ) : svg ? (
             <div
@@ -333,12 +333,49 @@ export function PreviewPane({
               }`}
               style={{
                 width: "100%",
-                padding: 24,
+                padding: "84px 52px",
                 transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
                 transformOrigin: "0 0",
               }}
             />
           ) : null}
+        </div>
+        <div className="canvas-controls">
+          <span className="canvas-hint">Drag to pan · Scroll to zoom</span>
+          <div className="zoom-controls">
+            <ZoomButton
+              label="Zoom out"
+              disabled={!canInteract || userZoom <= MIN_ZOOM}
+              onClick={() => zoomBy(-ZOOM_STEP)}
+            >
+              −
+            </ZoomButton>
+            <button
+              type="button"
+              className="zoom-value"
+              title="Reset zoom to fit"
+              disabled={!canInteract}
+              onClick={resetView}
+            >{`${Math.round(userZoom * 100)}%`}</button>
+            <ZoomButton
+              label="Zoom in"
+              disabled={!canInteract || userZoom >= MAX_ZOOM}
+              onClick={() => zoomBy(ZOOM_STEP)}
+            >
+              +
+            </ZoomButton>
+            <span className="zoom-divider" />
+            <button
+              type="button"
+              className="icon-button"
+              title="Fit to view"
+              aria-label="Fit to view"
+              disabled={!canInteract}
+              onClick={resetView}
+            >
+              <Icon name="expand" />
+            </button>
+          </div>
         </div>
         {svg && graph && !empty ? (
           <FlowInteractions
@@ -351,7 +388,7 @@ export function PreviewPane({
             onEditNode={onEditNode}
           />
         ) : svg && !empty ? (
-          <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-[#11151e]/90 px-3 py-2 text-[11px] text-zinc-400">
+          <div className="diagram-note">
             Node editing and flow tracing are available for flowcharts.
           </div>
         ) : null}
@@ -378,7 +415,7 @@ function ZoomButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-6 w-6 items-center justify-center rounded border border-white/10 bg-white/5 text-sm leading-none text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+      className="zoom-button"
     >
       {children}
     </button>

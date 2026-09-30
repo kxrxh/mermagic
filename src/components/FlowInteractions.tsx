@@ -19,7 +19,7 @@ type Props = {
 };
 
 const button =
-  "rounded-md border border-white/15 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cyan-300 disabled:opacity-40";
+  "rounded-md border border-white/15 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-lime-300 disabled:opacity-40";
 
 export function FlowInteractions({
   host,
@@ -160,12 +160,12 @@ export function FlowInteractions({
   }, []);
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-start justify-between gap-3 p-3">
-      <div className="pointer-events-auto max-w-full rounded-xl border border-white/15 bg-[#11151e]/95 p-2 shadow-xl backdrop-blur">
+    <div className="flow-interactions pointer-events-none absolute inset-0 z-10 flex flex-col items-start justify-between gap-3 p-4">
+      <div className="flow-mode-panel pointer-events-auto max-w-full rounded-xl border border-white/10 bg-[#202123]/95 p-2 shadow-xl">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className={`${button} ${mode === "edit" ? "bg-cyan-400/15 text-cyan-200" : ""}`}
+            className={`${button} ${mode === "edit" ? "bg-lime-400/15 text-lime-200" : ""}`}
             aria-pressed={mode === "edit"}
             onClick={() => setMode("edit")}
           >
@@ -173,7 +173,7 @@ export function FlowInteractions({
           </button>
           <button
             type="button"
-            className={`${button} ${mode === "trace" ? "bg-cyan-400/15 text-cyan-200" : ""}`}
+            className={`${button} ${mode === "trace" ? "bg-lime-400/15 text-lime-200" : ""}`}
             aria-pressed={mode === "trace"}
             onClick={() => {
               setMode("trace");
@@ -274,14 +274,14 @@ function NodeInspector({
   return (
     <form
       aria-label={`Edit node ${node.id}`}
-      className="pointer-events-auto w-full max-w-sm rounded-xl border border-white/15 bg-[#11151e]/95 p-3 shadow-xl backdrop-blur"
+      className="pointer-events-auto w-full max-w-sm rounded-xl border border-white/15 bg-[#202123]/95 p-3 shadow-xl backdrop-blur"
       onSubmit={(event) => {
         event.preventDefault();
         if (enabled && label.trim()) onEdit({ label });
       }}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="truncate font-mono text-xs text-cyan-200">
+        <span className="truncate font-mono text-xs text-lime-200">
           {node.id}
         </span>
         <button
@@ -301,7 +301,7 @@ function NodeInspector({
             value={label}
             onFocus={onRename}
             onChange={(event) => setLabel(event.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-white/15 bg-black/20 px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-cyan-400/60"
+            className="min-w-0 flex-1 rounded-md border border-white/15 bg-black/20 px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-lime-400/60"
           />
           <button
             type="submit"
@@ -317,7 +317,7 @@ function NodeInspector({
           Shape
           <select
             aria-label="Node shape"
-            className="mt-1 block w-full rounded-md border border-white/15 bg-[#191e29] px-2 py-1.5 text-xs text-zinc-200"
+            className="mt-1 block w-full rounded-md border border-white/15 bg-[#252629] px-2 py-1.5 text-xs text-zinc-200"
             value={overrides.shape ?? ""}
             disabled={!enabled}
             onChange={(event) => onEdit({ shape: event.target.value })}

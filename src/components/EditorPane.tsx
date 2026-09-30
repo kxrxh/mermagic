@@ -2,6 +2,7 @@ import { EditorView } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
 import { useEffect, useRef } from "react";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { Icon } from "@/components/Icon";
 import { editorTheme } from "@/lib/editorTheme";
 import type { SourceRange } from "@/lib/flowchart";
 import { mermaidCompleteExtensions } from "@/lib/mermaidComplete";
@@ -40,9 +41,13 @@ export function EditorPane({
     });
   }, [sourceSelection]);
   return (
-    <section className="flex min-h-0 min-w-0 flex-col border-r border-white/10">
-      <div className="flex h-8 items-center border-b border-white/10 px-3 text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-        Source
+    <section className="editor-pane" aria-label="Mermaid source editor">
+      <div className="pane-header">
+        <div className="pane-title">
+          <Icon name="code" />
+          <span>Source</span>
+        </div>
+        <span className="file-badge">diagram.mmd</span>
       </div>
       <div className="min-h-0 flex-1">
         <CodeMirror
@@ -64,6 +69,16 @@ export function EditorPane({
         />
       </div>
       {error ? <ErrorBanner message={error} /> : null}
+      <div className="editor-footer">
+        <span>
+          <span className={`status-dot ${error ? "error" : ""}`} />
+          {error ? "Syntax error" : "Mermaid"}
+        </span>
+        <span>
+          {code.split("\n").length} lines
+          <span className="statusbar-separator">·</span>UTF-8
+        </span>
+      </div>
     </section>
   );
 }
