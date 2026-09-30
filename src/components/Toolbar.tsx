@@ -1,12 +1,14 @@
-import { type ReactNode, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "@/components/HistoryPanel";
-import { ThemePicker } from "@/components/ThemePicker";
+import { BrandMark, Icon, type IconName } from "@/components/Icon";
+import { Popover } from "@/components/Popover";
 import type { HistoryEntry } from "@/lib/history";
 import { SAMPLES } from "@/lib/samples";
 
+export type WorkspaceMode = "split" | "source" | "canvas";
+
 type ToolbarProps = {
-  themeId: string;
-  onThemeChange: (id: string) => void;
+  documentTitle: string;
   onSampleSelect: (id: string) => void;
   history: HistoryEntry[];
   currentHistoryId: string | null;
@@ -24,321 +26,291 @@ type ToolbarProps = {
   onCopyPng: () => Promise<void>;
   canShare: boolean;
   onShare: () => Promise<void>;
+  mode: WorkspaceMode;
+  onModeChange: (mode: WorkspaceMode) => void;
+  libraryOpen: boolean;
+  onLibraryToggle: () => void;
 };
 
-export function Toolbar({
-  themeId,
-  onThemeChange,
-  onSampleSelect,
-  history,
-  currentHistoryId,
-  onHistoryNew,
-  onHistoryRestore,
-  onHistoryPin,
-  onHistoryRename,
-  onHistoryDelete,
-  canExport,
-  includeBackground,
-  onIncludeBackgroundChange,
-  onExportSvg,
-  onExportPng,
-  onExportPdf,
-  onCopyPng,
-  canShare,
-  onShare,
-}: ToolbarProps) {
-  const [copied, setCopied] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-
+export function Toolbar(props: ToolbarProps) {
+  const [notice, setNotice] = useState("");
+  const [libraryTab, setLibraryTab] = useState<"diagrams" | "templates">(
+    "diagrams",
+  );
+  const [templateQuery, setTemplateQuery] = useState("");
+  const noticeTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
+  const clipboard = async (action: () => Promise<void>, success: string) => {
+    try {
+      await action();
+      setNotice(success);
+    } catch {
+      setNotice("Clipboard unavailable. Please check browser permissions.");
+    }
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(""), 3500);
+  };
   return (
-    <header className="flex flex-nowrap items-center gap-3 border-b border-white/10 bg-[#0d0f14] px-3 py-2">
-      <div className="flex items-center gap-2 pr-2">
-        <BrandMark />
-        <div className="leading-tight">
-          <div className="text-sm font-semibold tracking-tight text-zinc-100">
-            Mermagic
-          </div>
+    <>
+      <header className="app-header">
+        <div className="brand">
+          <BrandMark />
+          <span>
+            mermagic<span className="brand-dot">.</span>
+          </span>
+          <span className="studio-badge">STUDIO</span>
         </div>
-      </div>
-
-      <label className="flex items-center gap-2 text-xs text-zinc-400">
-        Examples
-        <select
-          className="max-w-48 rounded-md border border-white/10 bg-[#161922] px-2 py-1.5 text-xs text-zinc-200 outline-none hover:border-white/20 focus:border-cyan-400/40"
-          defaultValue=""
-          onChange={(event) => {
-            const id = event.target.value;
-            if (id) onSampleSelect(id);
-            event.target.value = "";
-          }}
-        >
-          <option value="" disabled>
-            Choose…
-          </option>
-          {SAMPLES.map((sample) => (
-            <option key={sample.id} value={sample.id}>
-              {sample.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <div className="min-w-0 flex-1">
-        <ThemePicker value={themeId} onChange={onThemeChange} />
-      </div>
-
-      <div className="ml-auto flex shrink-0 items-center gap-2">
-        <div className="flex h-8">
+        <div className="document-heading">
           <button
             type="button"
-            title="New diagram"
-            onClick={onHistoryNew}
-            className="flex items-center gap-1.5 rounded-l-md border border-white/10 bg-white/[0.04] px-2.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10"
+            className="icon-button library-toggle"
+            title="Toggle diagram library"
+            aria-label="Toggle diagram library"
+            aria-expanded={props.libraryOpen}
+            onClick={props.onLibraryToggle}
           >
-            <PlusIcon />
-            New
+            <Icon name="panel" />
           </button>
-          <HistoryPanel
-            embedded
-            entries={history}
-            currentId={currentHistoryId}
-            onNew={onHistoryNew}
-            onRestore={onHistoryRestore}
-            onPin={onHistoryPin}
-            onRename={onHistoryRename}
-            onDelete={onHistoryDelete}
-          />
+          <span className="breadcrumb-label">Workspace</span>
+          <Icon name="chevron" />
+          <span className="document-title">{props.documentTitle}</span>
         </div>
-
-        <Divider />
-
-        <div className="flex h-8 overflow-hidden rounded-md border border-white/10 bg-white/[0.04]">
+        <div className="header-actions">
           <button
             type="button"
-            title={
-              includeBackground
-                ? "Background included in export"
-                : "Export without background"
+            className="button share-button"
+            disabled={!props.canShare}
+            onClick={() => void clipboard(props.onShare, "Share link copied")}
+          >
+            <Icon name="share" />
+            <span>Share</span>
+          </button>
+          <Popover
+            className="export-menu"
+            buttonClassName="button button-primary"
+            disabled={!props.canExport}
+            label={
+              <>
+                <Icon name="download" />
+                <span>Export</span>
+                <Icon name="down" />
+              </>
             }
-            aria-pressed={includeBackground}
-            onClick={() => onIncludeBackgroundChange(!includeBackground)}
-            className={`flex w-8 items-center justify-center border-r transition ${
-              includeBackground
-                ? "border-white/10 bg-cyan-400/15 text-cyan-100"
-                : "border-white/10 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"
-            }`}
           >
-            <BackgroundIcon />
-          </button>
-          <SegmentButton disabled={!canExport} onClick={onExportSvg}>
-            SVG
-          </SegmentButton>
-          <SegmentButton disabled={!canExport} onClick={onExportPng}>
-            PNG
-          </SegmentButton>
-          <SegmentButton disabled={!canExport} last onClick={onExportPdf}>
-            PDF
-          </SegmentButton>
+            <div className="popover-heading">
+              <strong>Take your diagram with you</strong>
+              <span>Ready for docs, decks, and the web.</span>
+            </div>
+            {[
+              {
+                label: "SVG",
+                detail: "Scalable vector",
+                action: props.onExportSvg,
+              },
+              {
+                label: "PNG",
+                detail: "High-resolution image",
+                action: props.onExportPng,
+              },
+              {
+                label: "PDF",
+                detail: "Print-ready document",
+                action: props.onExportPdf,
+              },
+            ].map((item) => (
+              <button
+                type="button"
+                className="export-option"
+                key={item.label}
+                onClick={item.action}
+              >
+                <span className="format-badge">{item.label}</span>
+                <span>{item.detail}</span>
+                <Icon name="download" />
+              </button>
+            ))}
+            <button
+              type="button"
+              className="export-option"
+              onClick={() =>
+                void clipboard(props.onCopyPng, "Image copied to clipboard")
+              }
+            >
+              <Icon name="copy" />
+              <span>Copy image to clipboard</span>
+            </button>
+            <label className="export-background">
+              <input
+                type="checkbox"
+                checked={props.includeBackground}
+                onChange={(event) =>
+                  props.onIncludeBackgroundChange(event.target.checked)
+                }
+              />
+              Include canvas background
+            </label>
+          </Popover>
         </div>
-
-        <ToolButton
-          title="Copy PNG to clipboard"
-          disabled={!canExport || copied}
-          onClick={() => {
-            void onCopyPng()
-              .then(() => {
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1500);
-              })
-              .catch(() => {
-                // Clipboard write can fail without HTTPS or permission.
-              });
-          }}
+      </header>
+      <aside className="sidebar" aria-label="Diagram library">
+        <div className="workspace-label">
+          <span className="workspace-avatar">M</span>
+          <div>
+            <strong>Personal workspace</strong>
+            <span>Your ideas, connected.</span>
+          </div>
+          <button
+            type="button"
+            className="icon-button sidebar-close"
+            aria-label="Close diagram library"
+            onClick={props.onLibraryToggle}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+        <button
+          type="button"
+          className="button new-diagram"
+          onClick={props.onHistoryNew}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-          {copied ? "Copied" : "Copy"}
-        </ToolButton>
-
-        <Divider />
-
-        <ToolButton
-          title="Copy shareable URL"
-          accent
-          disabled={!canShare || linkCopied}
-          onClick={() => {
-            void onShare()
-              .then(() => {
-                setLinkCopied(true);
-                window.setTimeout(() => setLinkCopied(false), 1500);
-              })
-              .catch(() => {
-                // Clipboard write can fail without HTTPS or permission.
-              });
-          }}
-        >
-          {linkCopied ? <CheckIcon /> : <ShareIcon />}
-          {linkCopied ? "Copied" : "Share"}
-        </ToolButton>
+          <Icon name="plus" />
+          <span>New diagram</span>
+        </button>
+        <nav className="library-tabs" aria-label="Library sections">
+          {(
+            [
+              { id: "diagrams", name: "My diagrams", icon: "diagram" },
+              { id: "templates", name: "Templates", icon: "grid" },
+            ] as const
+          ).map((tab) => (
+            <button
+              type="button"
+              key={tab.id}
+              className={libraryTab === tab.id ? "active" : ""}
+              aria-pressed={libraryTab === tab.id}
+              onClick={() => setLibraryTab(tab.id)}
+            >
+              <Icon name={tab.icon} />
+              {tab.name}
+              {tab.id === "diagrams" ? (
+                <span>{props.history.length}</span>
+              ) : (
+                <span>{SAMPLES.length}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-content">
+          {libraryTab === "diagrams" ? (
+            <HistoryPanel
+              entries={props.history}
+              currentId={props.currentHistoryId}
+              onRestore={props.onHistoryRestore}
+              onPin={props.onHistoryPin}
+              onRename={props.onHistoryRename}
+              onDelete={props.onHistoryDelete}
+            />
+          ) : (
+            <div className="template-library">
+              <label className="library-search">
+                <Icon name="search" />
+                <input
+                  aria-label="Search templates"
+                  placeholder="Find a starting point…"
+                  value={templateQuery}
+                  onChange={(event) => setTemplateQuery(event.target.value)}
+                />
+              </label>
+              <div className="section-label">Start with a template</div>
+              {SAMPLES.filter((sample) =>
+                sample.name.toLowerCase().includes(templateQuery.toLowerCase()),
+              ).map((sample, index) => (
+                <button
+                  type="button"
+                  className="template-row"
+                  key={sample.id}
+                  onClick={() => props.onSampleSelect(sample.id)}
+                >
+                  <span className="template-icon">
+                    <Icon
+                      name={
+                        (["diagram", "split", "grid", "canvas"] as IconName[])[
+                          index % 4
+                        ]
+                      }
+                    />
+                  </span>
+                  <span>{sample.name}</span>
+                  <Icon name="arrow" />
+                </button>
+              ))}
+              {!SAMPLES.some((sample) =>
+                sample.name.toLowerCase().includes(templateQuery.toLowerCase()),
+              ) ? (
+                <p className="library-empty">No matching templates.</p>
+              ) : null}
+            </div>
+          )}
+        </div>
+        {libraryTab === "diagrams" ? (
+          <div className="starter-card">
+            <span className="starter-icon">
+              <Icon name="grid" />
+            </span>
+            <strong>A little head start.</strong>
+            <p>From system architecture to your next big idea.</p>
+            <button type="button" onClick={() => setLibraryTab("templates")}>
+              Explore templates
+              <Icon name="arrow" />
+            </button>
+          </div>
+        ) : null}
+        <div className="sidebar-footer">
+          <span className="status-dot" />
+          Saved on this device
+          <a
+            href="https://mermaid.js.org/intro/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Mermaid documentation"
+            title="Mermaid documentation"
+          >
+            <Icon name="book" />
+          </a>
+        </div>
+      </aside>
+      <div className="workspace-topbar">
+        <div className="workspace-intro">
+          <span className="eyebrow">MAKE IDEAS VISIBLE</span>
+          <span>A little syntax. A lot of possibility.</span>
+        </div>
+        <fieldset className="view-switcher" aria-label="Workspace view">
+          {(
+            [
+              { id: "source", label: "Source", icon: "code" },
+              { id: "split", label: "Split", icon: "split" },
+              { id: "canvas", label: "Canvas", icon: "canvas" },
+            ] as const
+          ).map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              aria-pressed={props.mode === item.id}
+              className={props.mode === item.id ? "active" : ""}
+              onClick={() => props.onModeChange(item.id)}
+            >
+              <Icon name={item.icon} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </fieldset>
       </div>
-    </header>
-  );
-}
-
-function Divider() {
-  return <div className="h-5 w-px bg-white/10" aria-hidden="true" />;
-}
-
-function ToolButton({
-  children,
-  title,
-  disabled,
-  accent,
-  onClick,
-}: {
-  children: ReactNode;
-  title?: string;
-  disabled?: boolean;
-  accent?: boolean;
-  onClick: () => void;
-}) {
-  const tone = accent
-    ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
-    : "border-white/10 bg-white/[0.04] text-zinc-200 hover:border-white/20 hover:bg-white/10";
-
-  return (
-    <button
-      type="button"
-      title={title}
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${tone}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SegmentButton({
-  children,
-  disabled,
-  last,
-  onClick,
-}: {
-  children: string;
-  disabled?: boolean;
-  last?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`h-full min-w-11 px-2.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 ${
-        last ? "" : "border-r border-white/10"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        d="M8 3.2v9.6M3.2 8h9.6"
-      />
-    </svg>
-  );
-}
-
-function BackgroundIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
-      <rect
-        x="2"
-        y="2"
-        width="12"
-        height="12"
-        rx="1.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <path fill="currentColor" d="M2.6 2.6h5.4v5.4H2.6zM8 8h5.4v5.4H8z" />
-    </svg>
-  );
-}
-
-function CopyIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-        d="M5.5 5.2h7.2v8.3H5.5z"
-      />
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        d="M3.3 10.8V2.5h7.5"
-      />
-    </svg>
-  );
-}
-
-function ShareIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9.2 4.2 13 8l-3.8 3.8M13 8H6.4A3.4 3.4 0 0 0 3 11.4V12"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3.4 8.3 6.5 11.4 12.6 4.6"
-      />
-    </svg>
-  );
-}
-
-function BrandMark() {
-  return (
-    <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="#12141a" />
-      <circle cx="10" cy="16" r="4" fill="#22d3ee" />
-      <circle cx="22" cy="10" r="3.5" fill="#818cf8" />
-      <circle cx="22" cy="22" r="3.5" fill="#c084fc" />
-      <path
-        d="M13.6 14.4 L19.2 11.4 M13.6 17.6 L19.2 20.6"
-        stroke="#94a3b8"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
+      {notice ? (
+        <div className="toast" role="status">
+          <Icon name={notice.includes("unavailable") ? "copy" : "check"} />
+          {notice}
+        </div>
+      ) : null}
+    </>
   );
 }

@@ -1,7 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { EditorPane } from "@/components/EditorPane";
 import { PreviewPane } from "@/components/PreviewPane";
-import { Toolbar } from "@/components/Toolbar";
+import { Toolbar, type WorkspaceMode } from "@/components/Toolbar";
 import {
   copyPngToClipboard,
   downloadPdf,
@@ -23,6 +29,7 @@ import {
   removeEntry,
   renameEntry,
   startNew,
+  titleFromCode,
   togglePin,
   upsertCurrent,
 } from "@/lib/history";
@@ -87,6 +94,10 @@ function bootstrapApp(): {
 
 export default function App() {
   const [boot] = useState(bootstrapApp);
+  const [mode, setMode] = useState<WorkspaceMode>("split");
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [editorWidth, setEditorWidth] = useState(40);
+  const workspaceRef = useRef<HTMLElement>(null);
   const [{ code, themeId }, setState] = useState(boot.editor);
   const setCode = (next: string) =>
     setState((current) => ({ ...current, code: next }));
@@ -194,8 +205,8 @@ export default function App() {
       return;
     }
 
+    setRendering(true);
     const timer = window.setTimeout(() => {
-      setRendering(true);
       void (async () => {
         try {
           const next = await renderInteractiveMermaid(code, theme);
@@ -219,11 +230,20 @@ export default function App() {
   }, [code, theme]);
 
   return (
-    <div className="flex h-dvh flex-col bg-[#0c0e12] text-zinc-200">
+    <div className={`app-shell ${libraryOpen ? "library-open" : ""}`}>
       <Toolbar
-        themeId={theme.id}
-        onThemeChange={setThemeId}
-        onSampleSelect={(id) => switchTo({ code: getSample(id).code, themeId })}
+        documentTitle={
+          history.entries.find((entry) => entry.id === history.currentId)
+            ?.title ?? titleFromCode(code)
+        }
+        mode={mode}
+        onModeChange={setMode}
+        libraryOpen={libraryOpen}
+        onLibraryToggle={() => setLibraryOpen((open) => !open)}
+        onSampleSelect={(id) => {
+          switchTo({ code: getSample(id).code, themeId });
+          setLibraryOpen(false);
+        }}
         history={history.entries}
         currentHistoryId={history.currentId}
         onHistoryNew={() => {
@@ -232,6 +252,9 @@ export default function App() {
           const editor = { ...stateRef.current, code: "" };
           stateRef.current = editor;
           setState(editor);
+          setLibraryOpen(false);
+          setMode("split");
+          setSourceSelection(null);
         }}
         onHistoryRestore={(id) => {
           if (id === historyRef.current.currentId) return;
@@ -240,6 +263,7 @@ export default function App() {
           );
           if (!entry) return;
           switchTo({ code: entry.code, themeId: entry.themeId });
+          setLibraryOpen(false);
         }}
         onHistoryPin={(id) => {
           commitHistory(togglePin(historyRef.current, id));
@@ -250,27 +274,21 @@ export default function App() {
         onHistoryDelete={(id) => {
           commitHistory(removeEntry(historyRef.current, id));
         }}
-        canExport={!empty && Boolean(svg)}
+        canExport={!empty && Boolean(svg) && !rendering}
         includeBackground={includeBackground}
         onIncludeBackgroundChange={setIncludeBackground}
         onExportSvg={() => {
-          if (svg)
-            downloadSvg(svg, includeBackground ? theme.background : null);
+          if (svg) downloadSvg(svg, includeBackground ? theme : null);
         }}
         onExportPng={() => {
-          if (svg)
-            void downloadPng(svg, includeBackground ? theme.background : null);
+          if (svg) void downloadPng(svg, includeBackground ? theme : null);
         }}
         onExportPdf={() => {
-          if (svg)
-            void downloadPdf(svg, includeBackground ? theme.background : null);
+          if (svg) void downloadPdf(svg, includeBackground ? theme : null);
         }}
         onCopyPng={async () => {
           if (svg) {
-            await copyPngToClipboard(
-              svg,
-              includeBackground ? theme.background : null,
-            );
+            await copyPngToClipboard(svg, includeBackground ? theme : null);
           }
         }}
         canShare={!empty}
@@ -280,14 +298,73 @@ export default function App() {
           await navigator.clipboard.writeText(shareUrl(state));
         }}
       />
-      <main className="grid min-h-0 flex-1 grid-cols-2">
+      {libraryOpen ? (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close diagram library"
+          onClick={() => setLibraryOpen(false)}
+        />
+      ) : null}
+      <main
+        ref={workspaceRef}
+        className={`workspace mode-${mode}`}
+        style={{ "--editor-width": `${editorWidth}%` } as CSSProperties}
+      >
         <EditorPane
           code={code}
           error={empty ? null : error}
           onChange={setCode}
           sourceSelection={sourceSelection}
         />
+        {/* biome-ignore lint/a11y/useSemanticElements: A focusable ARIA separator supports resizing and contains a visual handle. */}
+        <div
+          className="pane-resizer"
+          role="separator"
+          aria-label="Resize source panel"
+          aria-orientation="vertical"
+          aria-valuemin={25}
+          aria-valuemax={65}
+          aria-valuenow={editorWidth}
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+              event.preventDefault();
+              setEditorWidth((width) =>
+                Math.min(
+                  65,
+                  Math.max(25, width + (event.key === "ArrowLeft" ? -2 : 2)),
+                ),
+              );
+            }
+          }}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+            const bounds = workspaceRef.current?.getBoundingClientRect();
+            if (bounds)
+              setEditorWidth(
+                Math.min(
+                  65,
+                  Math.max(
+                    25,
+                    ((event.clientX - bounds.left) / bounds.width) * 100,
+                  ),
+                ),
+              );
+          }}
+          onPointerUp={(event) =>
+            event.currentTarget.releasePointerCapture(event.pointerId)
+          }
+        >
+          <span />
+        </div>
         <PreviewPane
+          themeId={theme.id}
+          onThemeChange={setThemeId}
           key={history.currentId}
           svg={empty ? null : svg}
           background={theme.background}
@@ -300,6 +377,22 @@ export default function App() {
           onEditNode={(id, patch) => setCode(editFlowNode(code, id, patch))}
         />
       </main>
+      <footer className="app-statusbar">
+        <span>
+          <span className={`status-dot ${error ? "error" : ""}`} />
+          {empty
+            ? "Ready when you are"
+            : rendering
+              ? "Rendering diagram…"
+              : error
+                ? "Check your syntax"
+                : "All changes saved locally"}
+        </span>
+        <span>
+          Made for a clearer picture.
+          <span className="statusbar-separator">/</span>Mermaid v11
+        </span>
+      </footer>
     </div>
   );
 }

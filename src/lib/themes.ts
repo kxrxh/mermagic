@@ -2,6 +2,7 @@ export type ThemeVariables = Record<string, string | boolean | number>;
 
 export type ThemeKind = "modern" | "classic";
 export type ThemeLook = "classic" | "neo";
+export type CanvasPattern = "dots" | "grid" | "blueprint" | "none";
 
 export type DiagramTheme = {
   id: string;
@@ -13,6 +14,10 @@ export type DiagramTheme = {
   background: string;
   swatch: [string, string, string];
   variables: ThemeVariables;
+  description: string;
+  pattern: CanvasPattern;
+  patternColor: string;
+  featured: boolean;
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -64,13 +69,20 @@ type Palette = {
   muted: string;
   note: string;
   extras?: string[];
+  description?: string;
+  pattern?: CanvasPattern;
+  patternColor?: string;
+  featured?: boolean;
+  nodeText?: string;
+  look?: ThemeLook;
+  fontFamily?: string;
 };
 
 function buildTheme(p: Palette): DiagramTheme {
   const classic = p.kind === "classic";
-  const primaryText = p.text;
-  const secondaryText = p.text;
-  const tertiaryText = p.text;
+  const primaryText = p.nodeText ?? p.text;
+  const secondaryText = p.nodeText ?? p.text;
+  const tertiaryText = p.nodeText ?? p.text;
   const cluster = mix(p.background, p.muted, p.dark ? 0.18 : 0.12);
   const border = mix(p.line, p.primary, classic ? 0.22 : 0.38);
   const extras = p.extras ?? [
@@ -89,7 +101,7 @@ function buildTheme(p: Palette): DiagramTheme {
   const variables: ThemeVariables = {
     darkMode: p.dark,
     background: p.background,
-    fontFamily: classic ? CLASSIC_FONT : MODERN_FONT,
+    fontFamily: p.fontFamily ?? (classic ? CLASSIC_FONT : MODERN_FONT),
     fontSize: "15px",
     fontWeight: "500",
     textColor: p.text,
@@ -132,6 +144,10 @@ function buildTheme(p: Palette): DiagramTheme {
     sectionBkgColor2: mix(p.background, p.tertiary, 0.2),
     taskBorderColor: border,
     taskBkgColor: p.primary,
+    taskTextColor: primaryText,
+    taskTextOutsideColor: p.text,
+    taskTextLightColor: primaryText,
+    taskTextDarkColor: primaryText,
     activeTaskBorderColor: mix(p.line, p.secondary, 0.2),
     activeTaskBkgColor: p.secondary,
     gridColor: mix(p.line, p.background, 0.58),
@@ -152,7 +168,7 @@ function buildTheme(p: Palette): DiagramTheme {
     defaultLinkColor: p.line,
     stateBkg: p.primary,
     stateBorder: border,
-    stateLabelColor: p.text,
+    stateLabelColor: primaryText,
     transitionColor: p.line,
     transitionLabelColor: p.text,
     compositeBackground: cluster,
@@ -167,11 +183,11 @@ function buildTheme(p: Palette): DiagramTheme {
     relationLabelColor: p.text,
     requirementBackground: p.primary,
     requirementBorderColor: border,
-    requirementTextColor: p.text,
+    requirementTextColor: primaryText,
     pieStrokeColor: p.background,
     pieOuterStrokeColor: p.background,
     pieTitleTextColor: p.text,
-    pieSectionTextColor: p.text,
+    pieSectionTextColor: p.nodeText ?? p.text,
     pieLegendTextColor: p.text,
     pieOpacity: "1",
     useGradient: false,
@@ -197,15 +213,175 @@ function buildTheme(p: Palette): DiagramTheme {
     name: p.name,
     kind: p.kind,
     dark: p.dark,
-    look: classic ? "classic" : "neo",
-    curve: classic ? "linear" : "basis",
+    look: p.look ?? (classic ? "classic" : "neo"),
+    curve: classic || p.pattern === "blueprint" ? "linear" : "basis",
     background: p.background,
     swatch: [p.primary, p.line, p.background],
     variables,
+    description:
+      p.description ?? (classic ? "Timeless & precise" : "Quiet & considered"),
+    pattern: p.pattern ?? "dots",
+    patternColor: p.patternColor ?? `${p.line}26`,
+    featured: p.featured ?? false,
   };
 }
 
 export const THEMES: DiagramTheme[] = [
+  buildTheme({
+    id: "studio",
+    name: "Studio",
+    kind: "modern",
+    dark: true,
+    description: "Fresh lime. Big ideas.",
+    featured: true,
+    background: "#181c17",
+    primary: "#d4ee9f",
+    secondary: "#bfd4ae",
+    tertiary: "#b3cdd0",
+    text: "#edf3e5",
+    nodeText: "#26331e",
+    line: "#b8cd99",
+    muted: "#46553b",
+    note: "#e9cf98",
+    pattern: "dots",
+    patternColor: "#b8cd9926",
+    extras: ["#d4ee9f", "#b3cdd0", "#e9cf98", "#d8b5ca", "#b9b3db", "#a8cfba"],
+  }),
+  buildTheme({
+    id: "blueprint",
+    name: "Blueprint",
+    kind: "modern",
+    dark: true,
+    description: "Built on a blue grid.",
+    featured: true,
+    background: "#0d2444",
+    primary: "#12325a",
+    secondary: "#1b3d68",
+    tertiary: "#244975",
+    text: "#e1efff",
+    line: "#91c8ff",
+    muted: "#326399",
+    note: "#ffe5a3",
+    pattern: "blueprint",
+    patternColor: "#79b5f533",
+    look: "classic",
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace",
+    extras: ["#73b9f0", "#9ddbc9", "#ffd985", "#afaaff", "#f4afc0", "#88d7ea"],
+  }),
+  buildTheme({
+    id: "electric",
+    name: "Electric",
+    kind: "modern",
+    dark: true,
+    description: "Cobalt with a pulse.",
+    featured: true,
+    background: "#0e1326",
+    primary: "#2046aa",
+    secondary: "#283775",
+    tertiary: "#312954",
+    text: "#ecf1ff",
+    line: "#9eabff",
+    muted: "#36476c",
+    note: "#ffe08a",
+    pattern: "grid",
+    patternColor: "#829cff14",
+    extras: ["#6286ff", "#a38eff", "#7bdbc8", "#f7c66d", "#f299c4", "#8bbde9"],
+  }),
+  buildTheme({
+    id: "ultraviolet",
+    name: "Ultraviolet",
+    kind: "modern",
+    dark: true,
+    description: "A little after-hours magic.",
+    featured: true,
+    background: "#1a1229",
+    primary: "#453064",
+    secondary: "#5a3057",
+    tertiary: "#354369",
+    text: "#f4eaff",
+    line: "#d7a6f5",
+    muted: "#704879",
+    note: "#f3c9e8",
+    pattern: "dots",
+    patternColor: "#d7a6f526",
+    extras: ["#ba9cf3", "#eb9ecc", "#8bb8ed", "#9bd4c4", "#e7c286", "#dbaceb"],
+  }),
+  buildTheme({
+    id: "sunset",
+    name: "Sunset",
+    kind: "modern",
+    dark: true,
+    description: "Golden-hour thinking.",
+    featured: true,
+    background: "#24191b",
+    primary: "#ffc09b",
+    secondary: "#eaa7ad",
+    tertiary: "#d8b1c9",
+    text: "#fff0e5",
+    nodeText: "#482b2e",
+    line: "#efb493",
+    muted: "#75483c",
+    note: "#e6c486",
+    pattern: "none",
+    extras: ["#ffc09b", "#eaa7ad", "#d8b1c9", "#e6c486", "#b7b6d5", "#b6c5ac"],
+  }),
+  buildTheme({
+    id: "sakura",
+    name: "Sakura",
+    kind: "modern",
+    dark: false,
+    description: "Soft pink. Clear thinking.",
+    featured: true,
+    background: "#fcf0f3",
+    primary: "#f4ceda",
+    secondary: "#e7d8ef",
+    tertiary: "#f9e4cd",
+    text: "#61354b",
+    line: "#a95e81",
+    muted: "#c691a7",
+    note: "#f2deb1",
+    pattern: "dots",
+    patternColor: "#a95e8126",
+    extras: ["#b75b82", "#8d6aae", "#b8874f", "#56877a", "#7c79ae", "#b45e68"],
+  }),
+  buildTheme({
+    id: "mint",
+    name: "Mint",
+    kind: "modern",
+    dark: false,
+    description: "Room to breathe.",
+    featured: true,
+    background: "#eff7f1",
+    primary: "#cce7d5",
+    secondary: "#d4e8e6",
+    tertiary: "#e1e9cb",
+    text: "#274e3d",
+    line: "#57846d",
+    muted: "#91b7a0",
+    note: "#f2e2b5",
+    pattern: "grid",
+    patternColor: "#57846d1f",
+    extras: ["#3c8c68", "#488a96", "#789743", "#b68c44", "#8e70a4", "#b36f7a"],
+  }),
+  buildTheme({
+    id: "sand",
+    name: "Sand",
+    kind: "modern",
+    dark: false,
+    description: "A warm, quieter kind of canvas.",
+    featured: true,
+    background: "#f5efe3",
+    primary: "#e8dcc4",
+    secondary: "#d9dfcd",
+    tertiary: "#e8d2c8",
+    text: "#4e4433",
+    line: "#897755",
+    muted: "#b7a487",
+    note: "#efd39f",
+    pattern: "none",
+    extras: ["#a1844d", "#68816a", "#aa7163", "#7a87a0", "#9c7d95", "#9b965a"],
+  }),
+
   buildTheme({
     id: "obsidian",
     name: "Obsidian",
@@ -358,8 +534,37 @@ export const THEMES: DiagramTheme[] = [
   }),
 ];
 
-export const DEFAULT_THEME_ID = "obsidian";
+export const DEFAULT_THEME_ID = "studio";
 
 export function getTheme(id: string): DiagramTheme {
-  return THEMES.find((theme) => theme.id === id) ?? THEMES[0];
+  return (
+    THEMES.find((theme) => theme.id === id) ??
+    THEMES.find((theme) => theme.id === DEFAULT_THEME_ID) ??
+    THEMES[0]
+  );
+}
+
+export function canvasPatternStyle(
+  theme: Pick<DiagramTheme, "pattern" | "patternColor">,
+): { backgroundImage: string; backgroundSize: string } {
+  const color = theme.patternColor;
+  switch (theme.pattern) {
+    case "grid":
+      return {
+        backgroundImage: `linear-gradient(${color} 1px, transparent 1px), linear-gradient(90deg, ${color} 1px, transparent 1px)`,
+        backgroundSize: "24px 24px",
+      };
+    case "blueprint":
+      return {
+        backgroundImage: `linear-gradient(${color} 1px, transparent 1px), linear-gradient(90deg, ${color} 1px, transparent 1px), linear-gradient(${color.slice(0, 7)}12 1px, transparent 1px), linear-gradient(90deg, ${color.slice(0, 7)}12 1px, transparent 1px)`,
+        backgroundSize: "100px 100px, 100px 100px, 20px 20px, 20px 20px",
+      };
+    case "none":
+      return { backgroundImage: "none", backgroundSize: "auto" };
+    default:
+      return {
+        backgroundImage: `radial-gradient(${color} .8px, transparent .8px)`,
+        backgroundSize: "20px 20px",
+      };
+  }
 }

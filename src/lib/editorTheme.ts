@@ -4,21 +4,22 @@ export const editorTheme = EditorView.theme(
   {
     "&": {
       color: "#e4e4e7",
-      backgroundColor: "#0c0e12",
+      backgroundColor: "#18191b",
       height: "100%",
     },
     ".cm-content": {
-      caretColor: "#22d3ee",
+      caretColor: "#d4ee9f",
+      padding: "20px 0",
     },
     ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: "#22d3ee",
+      borderLeftColor: "#d4ee9f",
     },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       {
-        backgroundColor: "rgba(34, 211, 238, 0.18)",
+        backgroundColor: "rgba(212, 238, 159, 0.18)",
       },
     ".cm-panels": {
-      backgroundColor: "#0d0f14",
+      backgroundColor: "#1d1e20",
       color: "#e4e4e7",
     },
     ".cm-panels.cm-panels-top": {
@@ -31,13 +32,13 @@ export const editorTheme = EditorView.theme(
       backgroundColor: "rgba(255, 255, 255, 0.03)",
     },
     ".cm-selectionMatch": {
-      backgroundColor: "rgba(34, 211, 238, 0.12)",
+      backgroundColor: "rgba(212, 238, 159, 0.12)",
     },
     "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
       backgroundColor: "rgba(129, 140, 248, 0.22)",
     },
     ".cm-gutters": {
-      backgroundColor: "#0c0e12",
+      backgroundColor: "#18191b",
       color: "#52525b",
       border: "none",
     },
@@ -58,13 +59,13 @@ export const editorTheme = EditorView.theme(
     },
     ".cm-scroller": {
       fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
-      lineHeight: "1.55",
+      lineHeight: "1.9",
     },
     ".cm-lintRange-error": {
       backgroundColor: "rgba(251, 113, 133, 0.12)",
     },
     ".cm-tooltip": {
-      backgroundColor: "#161922",
+      backgroundColor: "#222325",
       border: "1px solid rgba(255, 255, 255, 0.1)",
       color: "#e4e4e7",
     },
@@ -73,8 +74,8 @@ export const editorTheme = EditorView.theme(
       borderBottomColor: "transparent",
     },
     ".cm-tooltip .cm-tooltip-arrow:after": {
-      borderTopColor: "#161922",
-      borderBottomColor: "#161922",
+      borderTopColor: "#222325",
+      borderBottomColor: "#222325",
     },
     ".cm-tooltip.cm-tooltip-lint": {
       backgroundColor: "#1c1216",
@@ -96,12 +97,12 @@ export const editorTheme = EditorView.theme(
         lineHeight: "1.45",
       },
       "& > ul > li[aria-selected]": {
-        backgroundColor: "rgba(34, 211, 238, 0.16)",
+        backgroundColor: "rgba(212, 238, 159, 0.16)",
         color: "#e4e4e7",
       },
     },
     ".cm-tooltip.cm-completionInfo": {
-      backgroundColor: "#161922",
+      backgroundColor: "#222325",
       border: "1px solid rgba(255, 255, 255, 0.1)",
       color: "#a1a1aa",
       fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
@@ -109,7 +110,7 @@ export const editorTheme = EditorView.theme(
       maxWidth: "280px",
     },
     ".cm-completionMatchedText": {
-      color: "#22d3ee",
+      color: "#d4ee9f",
       textDecoration: "none",
       fontWeight: "600",
     },
@@ -123,7 +124,7 @@ export const editorTheme = EditorView.theme(
       width: "1.2em",
     },
     ".cm-completionIcon-type": {
-      color: "#22d3ee",
+      color: "#d4ee9f",
     },
     ".cm-completionIcon-keyword": {
       color: "#818cf8",
