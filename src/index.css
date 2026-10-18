@@ -909,7 +909,7 @@ input {
   color: var(--accent);
   background: #d4ee9f13;
 }
-.flow-mode-panel p {
+.flow-mode-panel p[role="status"] {
   font-size: 9px;
   line-height: 1.6;
   padding: 0 5px;
@@ -1348,7 +1348,7 @@ input {
   .app-statusbar > span:last-child {
     display: none;
   }
-  .flow-mode-panel p {
+  .flow-mode-panel p[role="status"] {
     display: none;
   }
   .flow-interactions {

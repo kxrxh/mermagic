@@ -9,6 +9,7 @@ import { FlowInteractions } from "@/components/FlowInteractions";
 import { Icon } from "@/components/Icon";
 import { ThemePicker } from "@/components/ThemePicker";
 import type { FlowGraph, NodeEdit } from "@/lib/flowchart";
+import { addFlowNode } from "@/lib/flowEditing";
 import { canvasPatternStyle, getTheme } from "@/lib/themes";
 
 const MIN_ZOOM = 0.25;
@@ -83,6 +84,7 @@ type PreviewPaneProps = {
   interactive: boolean;
   onSelectNode: (id: string) => void;
   onEditNode: (id: string, patch: NodeEdit) => void;
+  onChange: (code: string) => void;
 };
 
 export function PreviewPane({
@@ -97,6 +99,7 @@ export function PreviewPane({
   interactive,
   onSelectNode,
   onEditNode,
+  onChange,
 }: PreviewPaneProps) {
   const theme = getTheme(themeId);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -320,6 +323,21 @@ export function PreviewPane({
                 <br />
                 or pick a template to get things flowing.
               </p>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange(
+                    addFlowNode(
+                      "flowchart LR\n",
+                      { nodes: [], edges: [] },
+                      { label: "Start", shape: "stadium" },
+                    ).code,
+                  )
+                }
+                className="button button-primary mt-5"
+              >
+                Start a flowchart
+              </button>
               <span className="empty-hint">
                 <Icon name="code" />
                 Your diagram appears here as you type.
@@ -386,6 +404,7 @@ export function PreviewPane({
             enabled={interactive}
             onSelectNode={onSelectNode}
             onEditNode={onEditNode}
+            onChange={onChange}
           />
         ) : svg && !empty ? (
           <div className="diagram-note">

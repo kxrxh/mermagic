@@ -1,8 +1,10 @@
-import { EditorView } from "@codemirror/view";
+import { redo, redoDepth, undo, undoDepth } from "@codemirror/commands";
+import { EditorView, type ViewUpdate } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Icon } from "@/components/Icon";
+import { isolateExternalHistory } from "@/lib/editorHistory";
 import { editorTheme } from "@/lib/editorTheme";
 import type { SourceRange } from "@/lib/flowchart";
 import { mermaidCompleteExtensions } from "@/lib/mermaidComplete";
@@ -21,6 +23,7 @@ const editorExtensions = [
   ...mermaidLintExtensions,
   ...mermaidCompleteExtensions,
   EditorView.lineWrapping,
+  isolateExternalHistory,
 ];
 
 export function EditorPane({
@@ -30,6 +33,21 @@ export function EditorPane({
   sourceSelection,
 }: EditorPaneProps) {
   const viewRef = useRef<EditorView | null>(null);
+  const [history, setHistory] = useState({ undo: false, redo: false });
+  const updateHistory = useCallback(({ state }: ViewUpdate) => {
+    const next = { undo: undoDepth(state) > 0, redo: redoDepth(state) > 0 };
+    setHistory((current) =>
+      current.undo === next.undo && current.redo === next.redo ? current : next,
+    );
+  }, []);
+
+  function runHistoryCommand(command: typeof undo) {
+    const view = viewRef.current;
+    if (!view) return;
+    command(view);
+    view.focus();
+  }
+
   useEffect(() => {
     const view = viewRef.current;
     if (!view || !sourceSelection) return;
@@ -47,7 +65,29 @@ export function EditorPane({
           <Icon name="code" />
           <span>Source</span>
         </div>
-        <span className="file-badge">diagram.mmd</span>
+        <div className="flex min-w-0 items-center gap-1">
+          <button
+            type="button"
+            title="Undo (⌘/Ctrl+Z)"
+            aria-keyshortcuts="Control+Z Meta+Z"
+            disabled={!history.undo}
+            onClick={() => runHistoryCommand(undo)}
+            className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-lime-400 disabled:pointer-events-none disabled:opacity-35"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            title="Redo (⌘+Shift+Z / Ctrl+Y)"
+            aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"
+            disabled={!history.redo}
+            onClick={() => runHistoryCommand(redo)}
+            className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-lime-400 disabled:pointer-events-none disabled:opacity-35"
+          >
+            Redo
+          </button>
+          <span className="file-badge truncate">diagram.mmd</span>
+        </div>
       </div>
       <div className="min-h-0 flex-1">
         <CodeMirror
@@ -56,6 +96,7 @@ export function EditorPane({
           theme={editorTheme}
           extensions={editorExtensions}
           onChange={onChange}
+          onUpdate={updateHistory}
           onCreateEditor={(view) => {
             viewRef.current = view;
           }}

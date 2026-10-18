@@ -25,6 +25,14 @@ export const NODE_SHAPES = [
   ["subproc", "Subroutine"],
 ] as const;
 
+export function escapeFlowLabel(label: string) {
+  // Mermaid entities keep label punctuation and line breaks out of its syntax.
+  return label.replace(
+    /[#"<>&{}\\\r\n\t|`]/g,
+    (char) => `#${char.charCodeAt(0)};`,
+  );
+}
+
 // Mermaid's parsed database is the authority for connections, including chained
 // links, explicit edge IDs and links to subgraphs. Keep this adapter isolated.
 export function readFlowGraph(
@@ -49,7 +57,14 @@ export function readFlowGraph(
   return {
     nodes: Array.from(db.getVertices(), ([id, node]) => ({
       id,
-      label: node.text ?? id,
+      // Parsed labels still contain Mermaid's numeric entity placeholders.
+      label: (node.text ?? id).replace(
+        /ﬂ°°(\d+)¶ß/g,
+        (encoded, value: string) =>
+          Number(value) <= 0x10ffff
+            ? String.fromCodePoint(Number(value))
+            : encoded,
+      ),
       shape: node.type,
       domId: node.domId,
     })),
@@ -157,12 +172,7 @@ export function editFlowNode(
   const { start, end } = nodeMarkers(id);
   const attributes: string[] = [];
   if (edit.label !== undefined) {
-    // Mermaid entities keep quotes, braces, hashes and markup literal in labels.
-    const label = edit.label.replace(
-      /[#"<>&{}\\\r\n\t]/g,
-      (char) => `#${char.charCodeAt(0)};`,
-    );
-    attributes.push(`label: "${label}"`);
+    attributes.push(`label: "${escapeFlowLabel(edit.label)}"`);
   }
   if (edit.shape && NODE_SHAPES.some(([shape]) => shape === edit.shape))
     attributes.push(`shape: ${edit.shape}`);

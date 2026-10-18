@@ -9,8 +9,10 @@ import {
 } from "../src/lib/flowchart";
 
 function graph(links: [string, string, boolean?][]): FlowGraph {
+  const ids = new Set<string>();
+  for (const [start, end] of links) ids.add(start).add(end);
   return {
-    nodes: [...new Set(links.flatMap(([a, b]) => [a, b]))].map((id) => ({
+    nodes: [...ids].map((id) => ({
       id,
       label: id,
     })),
@@ -141,6 +143,7 @@ test("Mermaid graph adapter ignores layout-only links and keeps edge IDs", () =>
       new Map([
         ["A", { text: "Alpha", domId: "flowchart-A-0" }],
         ["B", {}],
+        ["C", { text: "ﬂ°°38¶ß ﬂ°°999999999¶ß" }],
       ]),
     getEdges: () => [
       { id: "custom-edge", start: "A", end: "B", type: "double_arrow_point" },
@@ -151,5 +154,6 @@ test("Mermaid graph adapter ignores layout-only links and keeps edge IDs", () =>
     { id: "custom-edge", start: "A", end: "B", bidirectional: true },
   ]);
   expect(result?.nodes[1].label).toBe("B");
+  expect(result?.nodes[2].label).toBe("& ﬂ°°999999999¶ß");
   expect(readFlowGraph("sequence", {})).toBeNull();
 });

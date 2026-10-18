@@ -1,5 +1,6 @@
 import {
   type CSSProperties,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -45,6 +46,8 @@ import { DEFAULT_THEME_ID, getTheme } from "@/lib/themes";
 const CODE_KEY = "mermagic:code:v2";
 const THEME_KEY = "mermagic:theme";
 
+type EditorDocument = { code: string; themeId: string };
+
 function readStored(key: string): string | null {
   try {
     return localStorage.getItem(key);
@@ -61,7 +64,7 @@ function writeStored(key: string, value: string) {
   }
 }
 
-function initialEditor(): { code: string; themeId: string } {
+function initialEditor(): EditorDocument {
   const shared = readShareFromLocation();
   if (shared) {
     return { code: shared.code, themeId: getTheme(shared.themeId).id };
@@ -75,7 +78,7 @@ function initialEditor(): { code: string; themeId: string } {
 }
 
 function bootstrapApp(): {
-  editor: { code: string; themeId: string };
+  editor: EditorDocument;
   history: HistorySnapshot;
 } {
   const editor = initialEditor();
@@ -99,11 +102,16 @@ export default function App() {
   const [editorWidth, setEditorWidth] = useState(40);
   const workspaceRef = useRef<HTMLElement>(null);
   const [{ code, themeId }, setState] = useState(boot.editor);
-  const setCode = (next: string) =>
-    setState((current) => ({ ...current, code: next }));
-  const setThemeId = (next: string) =>
-    setState((current) => ({ ...current, themeId: next }));
+  const setCode = useCallback(
+    (next: string) => setState((current) => ({ ...current, code: next })),
+    [],
+  );
+  const setThemeId = useCallback(
+    (next: string) => setState((current) => ({ ...current, themeId: next })),
+    [],
+  );
   const [history, setHistory] = useState(boot.history);
+  const [editorSession, setEditorSession] = useState(0);
   const [svg, setSvg] = useState<string | null>(null);
   const [graph, setGraph] = useState<FlowGraph | null>(null);
   const [renderedCode, setRenderedCode] = useState("");
@@ -131,17 +139,22 @@ export default function App() {
     return persisted;
   };
 
-  const switchTo = (next: { code: string; themeId: string }) => {
+  const resetEditor = (editor: EditorDocument) => {
+    stateRef.current = editor;
+    setSourceSelection(null);
+    setEditorSession((current) => current + 1);
+    setState(editor);
+  };
+
+  const switchTo = (next: EditorDocument) => {
     window.clearTimeout(debounceRef.current);
     const flushed = flushCurrent(historyRef.current, stateRef.current);
     const opened = openOrCreate(flushed, next);
     commitHistory(opened);
-    const editor = {
+    resetEditor({
       code: next.code,
       themeId: getTheme(next.themeId).id,
-    };
-    stateRef.current = editor;
-    setState(editor);
+    });
   };
   const switchToRef = useRef(switchTo);
   switchToRef.current = switchTo;
@@ -249,12 +262,9 @@ export default function App() {
         onHistoryNew={() => {
           window.clearTimeout(debounceRef.current);
           commitHistory(startNew(historyRef.current, stateRef.current));
-          const editor = { ...stateRef.current, code: "" };
-          stateRef.current = editor;
-          setState(editor);
+          resetEditor({ ...stateRef.current, code: "" });
           setLibraryOpen(false);
           setMode("split");
-          setSourceSelection(null);
         }}
         onHistoryRestore={(id) => {
           if (id === historyRef.current.currentId) return;
@@ -312,6 +322,7 @@ export default function App() {
         style={{ "--editor-width": `${editorWidth}%` } as CSSProperties}
       >
         <EditorPane
+          key={editorSession}
           code={code}
           error={empty ? null : error}
           onChange={setCode}
@@ -375,6 +386,7 @@ export default function App() {
           interactive={!rendering && code === renderedCode && !error}
           onSelectNode={(id) => setSourceSelection(findNodeSource(code, id))}
           onEditNode={(id, patch) => setCode(editFlowNode(code, id, patch))}
+          onChange={setCode}
         />
       </main>
       <footer className="app-statusbar">
