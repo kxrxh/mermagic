@@ -322,7 +322,7 @@ export default function App() {
         style={{ "--editor-width": `${editorWidth}%` } as CSSProperties}
       >
         <EditorPane
-          key={editorSession}
+          key={`source-${editorSession}`}
           code={code}
           error={empty ? null : error}
           onChange={setCode}
@@ -376,7 +376,7 @@ export default function App() {
         <PreviewPane
           themeId={theme.id}
           onThemeChange={setThemeId}
-          key={editorSession}
+          key={`preview-${editorSession}`}
           svg={empty ? null : svg}
           background={theme.background}
           rendering={!empty && rendering}

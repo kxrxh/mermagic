@@ -4,6 +4,7 @@ import { BrandMark, Icon, type IconName } from "@/components/Icon";
 import { Popover } from "@/components/Popover";
 import type { HistoryEntry } from "@/lib/history";
 import { SAMPLES } from "@/lib/samples";
+import { dismissStarterCard, isStarterCardDismissed } from "@/lib/starterCard";
 
 export type WorkspaceMode = "split" | "source" | "canvas";
 
@@ -34,6 +35,9 @@ type ToolbarProps = {
 
 export function Toolbar(props: ToolbarProps) {
   const [notice, setNotice] = useState("");
+  const [starterDismissed, setStarterDismissed] = useState(
+    isStarterCardDismissed,
+  );
   const [libraryTab, setLibraryTab] = useState<"diagrams" | "templates">(
     "diagrams",
   );
@@ -252,18 +256,28 @@ export function Toolbar(props: ToolbarProps) {
             </div>
           )}
         </div>
-        {libraryTab === "diagrams" ? (
-          <div className="starter-card">
+        {libraryTab === "diagrams" && !starterDismissed ? (
+          <button
+            type="button"
+            className="starter-card"
+            onClick={() => {
+              setStarterDismissed(true);
+              dismissStarterCard();
+              setLibraryTab("templates");
+            }}
+          >
             <span className="starter-icon">
               <Icon name="grid" />
             </span>
             <strong>A little head start.</strong>
-            <p>From system architecture to your next big idea.</p>
-            <button type="button" onClick={() => setLibraryTab("templates")}>
+            <span className="starter-description">
+              From system architecture to your next big idea.
+            </span>
+            <span className="starter-action">
               Explore templates
               <Icon name="arrow" />
-            </button>
-          </div>
+            </span>
+          </button>
         ) : null}
         <div className="sidebar-footer">
           <span className="status-dot" />

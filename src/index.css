@@ -484,6 +484,11 @@ input {
   border: 1px solid #2b2e35;
   background: #191b1f;
   border-radius: 10px;
+  color: var(--text);
+  text-align: left;
+}
+.starter-card:hover {
+  background: var(--surface-hover);
 }
 .starter-icon {
   display: block;
@@ -498,25 +503,23 @@ input {
   font-size: 12px;
   font-weight: 500;
 }
-.starter-card p {
+.starter-card .starter-description {
+  display: block;
   color: #a1a6af;
   font-size: 11px;
   line-height: 1.7;
   margin: 6px 0 14px;
 }
-.starter-card button {
+.starter-card .starter-action {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background: none;
-  border: 0;
-  padding: 0;
   color: var(--accent);
   font-size: 10px;
   font-weight: 500;
 }
-.starter-card button .icon {
+.starter-card .starter-action .icon {
   width: 14px;
 }
 .sidebar-footer {
