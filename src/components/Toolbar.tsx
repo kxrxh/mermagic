@@ -288,10 +288,6 @@ export function Toolbar(props: ToolbarProps) {
         </div>
       </aside>
       <div className="workspace-topbar">
-        <div className="workspace-intro">
-          <span className="eyebrow">MAKE IDEAS VISIBLE</span>
-          <span>A little syntax. A lot of possibility.</span>
-        </div>
         <fieldset className="view-switcher" aria-label="Workspace view">
           {(
             [
