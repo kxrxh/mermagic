@@ -151,16 +151,16 @@ const mermaidLanguage = StreamLanguage.define<MermaidStreamState>({
 });
 
 const mermaidHighlightStyle = HighlightStyle.define([
-  { tag: t.typeName, color: "#22d3ee", fontWeight: "600" },
-  { tag: t.keyword, color: "#818cf8" },
-  { tag: t.variableName, color: "#e4e4e7" },
-  { tag: t.string, color: "#67e8f9" },
-  { tag: t.operator, color: "#c084fc" },
-  { tag: t.number, color: "#a1a1aa" },
-  { tag: t.comment, color: "#52525b", fontStyle: "italic" },
-  { tag: t.meta, color: "#22d3ee" },
-  { tag: t.attributeName, color: "#818cf8" },
-  { tag: t.punctuation, color: "#71717a" },
+  { tag: t.typeName, color: "#b6c5dd", fontWeight: "600" },
+  { tag: t.keyword, color: "#bdb7d8" },
+  { tag: t.variableName, color: "#eceef2" },
+  { tag: t.string, color: "#d4c3ad" },
+  { tag: t.operator, color: "#9cafd0" },
+  { tag: t.number, color: "#b5bdca" },
+  { tag: t.comment, color: "#7f8795", fontStyle: "italic" },
+  { tag: t.meta, color: "#b6c5dd" },
+  { tag: t.attributeName, color: "#bdb7d8" },
+  { tag: t.punctuation, color: "#949caa" },
 ]);
 
 function leadingIndent(text: string) {

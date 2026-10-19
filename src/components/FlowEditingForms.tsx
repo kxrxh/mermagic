@@ -8,9 +8,9 @@ import {
 import type { FlowConnection } from "@/lib/flowEditing";
 
 export const flowButtonClass =
-  "rounded-md border border-white/15 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-lime-300 disabled:opacity-40";
+  "rounded-md border border-white/15 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-zinc-300 disabled:opacity-40";
 export const flowFieldClass =
-  "mt-1 block w-full rounded-md border border-white/15 bg-[#252629] px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-lime-400/60 disabled:opacity-40";
+  "mt-1 block w-full rounded-md border border-white/15 bg-[#24272d] px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-zinc-300/60 disabled:opacity-40";
 
 export function AddNodeForm({
   enabled,
@@ -68,7 +68,7 @@ export function AddNodeForm({
       <div className="flex gap-2">
         <button
           type="submit"
-          className={`${flowButtonClass} bg-lime-400/15 text-lime-200`}
+          className={`${flowButtonClass} bg-white/10 text-zinc-100`}
           disabled={!enabled || !label.trim()}
         >
           Create node
@@ -194,7 +194,7 @@ export function ConnectionForm({
       <div className="flex gap-2">
         <button
           type="submit"
-          className={`${flowButtonClass} bg-lime-400/15 text-lime-200`}
+          className={`${flowButtonClass} bg-white/10 text-zinc-100`}
           disabled={!enabled || !start || !end}
         >
           Connect nodes
@@ -247,7 +247,7 @@ export function NodeInspector({
       }}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="truncate font-mono text-xs text-lime-200">
+        <span className="truncate font-mono text-xs text-zinc-100">
           {node.id}
         </span>
         <button
@@ -268,7 +268,7 @@ export function NodeInspector({
             disabled={!enabled}
             onFocus={onRename}
             onChange={(event) => setLabel(event.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-white/15 bg-black/20 px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-lime-400/60"
+            className="min-w-0 flex-1 rounded-md border border-white/15 bg-black/20 px-2 py-1.5 text-xs text-zinc-100 outline-none focus:border-zinc-300/60"
           />
           <button
             type="submit"
@@ -284,7 +284,7 @@ export function NodeInspector({
           Shape
           <select
             aria-label="Node shape"
-            className="mt-1 block w-full rounded-md border border-white/15 bg-[#252629] px-2 py-1.5 text-xs text-zinc-200"
+            className="mt-1 block w-full rounded-md border border-white/15 bg-[#24272d] px-2 py-1.5 text-xs text-zinc-200"
             value={overrides.shape ?? ""}
             disabled={!enabled}
             onChange={(event) => onEdit({ shape: event.target.value })}
@@ -304,7 +304,7 @@ export function NodeInspector({
           <input
             aria-label="Node fill color"
             type="color"
-            value={overrides.color ?? "#22d3ee"}
+            value={overrides.color ?? "#94a3b8"}
             disabled={!enabled}
             onChange={(event) => onEdit({ color: event.target.value })}
             className="mt-1 block h-8 w-10 cursor-pointer rounded border border-white/15 bg-transparent p-0.5"

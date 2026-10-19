@@ -3,59 +3,59 @@ import { EditorView } from "@codemirror/view";
 export const editorTheme = EditorView.theme(
   {
     "&": {
-      color: "#e4e4e7",
-      backgroundColor: "#18191b",
+      color: "var(--text)",
+      backgroundColor: "#151619",
       height: "100%",
     },
     ".cm-content": {
-      caretColor: "#d4ee9f",
+      caretColor: "var(--accent)",
       padding: "20px 0",
     },
     ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: "#d4ee9f",
+      borderLeftColor: "var(--accent)",
     },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       {
-        backgroundColor: "rgba(212, 238, 159, 0.18)",
+        backgroundColor: "rgba(164, 178, 199, 0.24)",
       },
     ".cm-panels": {
-      backgroundColor: "#1d1e20",
-      color: "#e4e4e7",
+      backgroundColor: "var(--surface-raised)",
+      color: "var(--text)",
     },
     ".cm-panels.cm-panels-top": {
-      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+      borderBottom: "1px solid var(--border)",
     },
     ".cm-panels.cm-panels-bottom": {
-      borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+      borderTop: "1px solid var(--border)",
     },
     ".cm-activeLine": {
       backgroundColor: "rgba(255, 255, 255, 0.03)",
     },
     ".cm-selectionMatch": {
-      backgroundColor: "rgba(212, 238, 159, 0.12)",
+      backgroundColor: "rgba(164, 178, 199, 0.14)",
     },
     "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
-      backgroundColor: "rgba(129, 140, 248, 0.22)",
+      backgroundColor: "rgba(189, 183, 216, 0.18)",
     },
     ".cm-gutters": {
-      backgroundColor: "#18191b",
-      color: "#52525b",
+      backgroundColor: "#151619",
+      color: "#7e8490",
       border: "none",
     },
     ".cm-gutterElement": {
-      color: "#52525b",
+      color: "#7e8490",
     },
     ".cm-gutter-lint": {
       width: "14px",
     },
     ".cm-activeLineGutter": {
       backgroundColor: "rgba(255, 255, 255, 0.03)",
-      color: "#a1a1aa",
+      color: "#b4bac5",
     },
     ".cm-foldPlaceholder": {
       backgroundColor: "transparent",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
-      color: "#71717a",
+      border: "1px solid var(--border)",
+      color: "#949ba8",
     },
     ".cm-scroller": {
       fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
@@ -65,17 +65,17 @@ export const editorTheme = EditorView.theme(
       backgroundColor: "rgba(251, 113, 133, 0.12)",
     },
     ".cm-tooltip": {
-      backgroundColor: "#222325",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
-      color: "#e4e4e7",
+      backgroundColor: "#1b1d21",
+      border: "1px solid var(--border)",
+      color: "var(--text)",
     },
     ".cm-tooltip .cm-tooltip-arrow:before": {
       borderTopColor: "transparent",
       borderBottomColor: "transparent",
     },
     ".cm-tooltip .cm-tooltip-arrow:after": {
-      borderTopColor: "#222325",
-      borderBottomColor: "#222325",
+      borderTopColor: "#1b1d21",
+      borderBottomColor: "#1b1d21",
     },
     ".cm-tooltip.cm-tooltip-lint": {
       backgroundColor: "#1c1216",
@@ -97,43 +97,43 @@ export const editorTheme = EditorView.theme(
         lineHeight: "1.45",
       },
       "& > ul > li[aria-selected]": {
-        backgroundColor: "rgba(212, 238, 159, 0.16)",
-        color: "#e4e4e7",
+        backgroundColor: "rgba(164, 178, 199, 0.2)",
+        color: "var(--text)",
       },
     },
     ".cm-tooltip.cm-completionInfo": {
-      backgroundColor: "#222325",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
-      color: "#a1a1aa",
+      backgroundColor: "#1b1d21",
+      border: "1px solid var(--border)",
+      color: "var(--muted)",
       fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
       fontSize: "11px",
       maxWidth: "280px",
     },
     ".cm-completionMatchedText": {
-      color: "#d4ee9f",
+      color: "var(--accent)",
       textDecoration: "none",
       fontWeight: "600",
     },
     ".cm-completionDetail": {
-      color: "#71717a",
+      color: "#949ba8",
       fontStyle: "normal",
       marginLeft: "0.6em",
     },
     ".cm-completionIcon": {
-      color: "#52525b",
+      color: "#7e8490",
       width: "1.2em",
     },
     ".cm-completionIcon-type": {
-      color: "#d4ee9f",
+      color: "#b6c5dd",
     },
     ".cm-completionIcon-keyword": {
-      color: "#818cf8",
+      color: "#bdb7d8",
     },
     ".cm-completionIcon-function": {
-      color: "#c084fc",
+      color: "#cbb9d3",
     },
     ".cm-completionIcon-variable": {
-      color: "#67e8f9",
+      color: "#d4c3ad",
     },
   },
   { dark: true },

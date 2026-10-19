@@ -20,6 +20,7 @@ const paths = {
   trash: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7",
   close: "m6 6 12 12M6 18 18 6",
   panel: "M3 4h18v16H3zM9 4v16M5.5 8h1M5.5 12h1",
+  move: "M12 3v18M3 12h18m-12-6 3-3 3 3m-6 12 3 3 3-3M6 9l-3 3 3 3m12-6 3 3-3 3",
   palette:
     "M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1-3.7 2 2 0 0 1 1-3.8h3a3 3 0 0 0 3-3A8 8 0 0 0 12 3ZM7 9h.01M10 6h.01M15 6h.01M18 9h.01",
   expand: "M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5",

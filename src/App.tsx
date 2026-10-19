@@ -376,7 +376,7 @@ export default function App() {
         <PreviewPane
           themeId={theme.id}
           onThemeChange={setThemeId}
-          key={history.currentId}
+          key={editorSession}
           svg={empty ? null : svg}
           background={theme.background}
           rendering={!empty && rendering}

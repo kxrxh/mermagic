@@ -72,7 +72,7 @@ export function EditorPane({
             aria-keyshortcuts="Control+Z Meta+Z"
             disabled={!history.undo}
             onClick={() => runHistoryCommand(undo)}
-            className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-lime-400 disabled:pointer-events-none disabled:opacity-35"
+            className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-zinc-300 disabled:pointer-events-none disabled:opacity-35"
           >
             Undo
           </button>
@@ -82,7 +82,7 @@ export function EditorPane({
             aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"
             disabled={!history.redo}
             onClick={() => runHistoryCommand(redo)}
-            className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-lime-400 disabled:pointer-events-none disabled:opacity-35"
+            className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-zinc-300 disabled:pointer-events-none disabled:opacity-35"
           >
             Redo
           </button>

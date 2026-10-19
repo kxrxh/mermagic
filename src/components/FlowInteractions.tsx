@@ -6,6 +6,7 @@ import {
   flowFieldClass,
   NodeInspector,
 } from "@/components/FlowEditingForms";
+import { FlowToolsPanel } from "@/components/FlowToolsPanel";
 import { type FlowGraph, type NodeEdit, tracePaths } from "@/lib/flowchart";
 import {
   addFlowNode,
@@ -48,6 +49,7 @@ export function FlowInteractions({
   const [edgeLabel, setEdgeLabel] = useState("");
   const [connection, setConnection] = useState<FlowConnection>("arrow");
   const [error, setError] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(true);
   const pendingNode = useRef<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
@@ -83,9 +85,9 @@ export function FlowInteractions({
   }, [graph, selected, endpoints]);
 
   useEffect(() => {
-    if (mode === "add" || (mode === "connect" && end))
+    if (!collapsed && (mode === "add" || (mode === "connect" && end)))
       labelRef.current?.focus();
-  }, [mode, end]);
+  }, [mode, end, collapsed]);
 
   const changeMode = (next: typeof mode) => {
     setMode(next);
@@ -161,6 +163,7 @@ export function FlowInteractions({
               : [item.id],
           );
         } else {
+          setCollapsed(false);
           setMode("edit");
           setSelected(item.id);
           setRenaming(rename);
@@ -217,240 +220,243 @@ export function FlowInteractions({
       setMode("edit");
       pendingNode.current = null;
       if (panelRef.current?.contains(document.activeElement))
-        editButtonRef.current?.focus();
+        if (collapsed)
+          panelRef.current
+            .querySelector<HTMLButtonElement>("[data-panel-toggle]")
+            ?.focus();
+        else editButtonRef.current?.focus();
     };
     window.addEventListener("keydown", onEscape);
     return () => window.removeEventListener("keydown", onEscape);
-  }, []);
+  }, [collapsed]);
 
   return (
-    <div className="flow-interactions pointer-events-none absolute inset-0 z-10 flex items-start p-4">
-      <div
-        ref={panelRef}
-        className="flow-mode-panel pointer-events-auto max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-[#202123]/95 p-2 shadow-xl"
-      >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            ref={editButtonRef}
-            type="button"
-            className={`${flowButtonClass} ${mode === "edit" ? "bg-lime-400/15 text-lime-200" : ""}`}
-            aria-pressed={mode === "edit"}
-            onClick={() => changeMode("edit")}
-          >
-            Edit nodes
-          </button>
-          <button
-            type="button"
-            className={`${flowButtonClass} ${mode === "add" ? "bg-lime-400/15 text-lime-200" : ""}`}
-            aria-pressed={mode === "add"}
-            disabled={!enabled}
-            onClick={() => changeMode("add")}
-          >
-            Add node
-          </button>
-          <button
-            type="button"
-            className={`${flowButtonClass} ${mode === "connect" ? "bg-lime-400/15 text-lime-200" : ""}`}
-            aria-pressed={mode === "connect"}
-            disabled={!enabled || graph.nodes.length < 2}
-            onClick={() => changeMode("connect")}
-          >
-            Connect
-          </button>
-          <button
-            type="button"
-            className={`${flowButtonClass} ${mode === "trace" ? "bg-lime-400/15 text-lime-200" : ""}`}
-            aria-pressed={mode === "trace"}
-            disabled={!enabled}
-            onClick={() => changeMode("trace")}
-          >
-            Follow flow
-          </button>
-          {(node || endpoints.length > 0) && (
-            <button
-              type="button"
-              className={flowButtonClass}
-              onClick={() => {
-                setSelected(null);
-                setEndpoints([]);
-                setRenaming(false);
-                setError(null);
-                pendingNode.current = null;
-              }}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        <label className="mt-2 flex items-center gap-2 px-1 text-[11px] text-zinc-400">
-          Layout
-          <select
-            aria-label="Flowchart layout direction"
-            className={`${flowFieldClass} mt-0 min-w-0 flex-1`}
-            value={direction ?? ""}
-            disabled={!enabled || direction === null}
-            onChange={(event) => {
-              try {
-                onChange(
-                  setFlowDirection(code, event.target.value as FlowDirection),
-                );
-                setError(null);
-              } catch (error) {
-                setError(
-                  error instanceof Error
-                    ? error.message
-                    : "Could not change the layout.",
-                );
-              }
-            }}
-          >
-            {direction === null && <option value="">Current direction</option>}
-            <option value="TB">Top to bottom</option>
-            <option value="LR">Left to right</option>
-            <option value="BT">Bottom to top</option>
-            <option value="RL">Right to left</option>
-          </select>
-        </label>
-        <p
-          className="mt-2 max-w-80 break-words px-1 text-[11px] leading-relaxed text-zinc-400"
-          role="status"
+    <FlowToolsPanel
+      panelRef={panelRef}
+      collapsed={collapsed}
+      onCollapsedChange={(next) => {
+        setCollapsed(next);
+        if (next) setRenaming(false);
+      }}
+    >
+      <div className="flow-mode-tabs flex flex-wrap items-center gap-1.5">
+        <button
+          ref={editButtonRef}
+          type="button"
+          className={`${flowButtonClass} ${mode === "edit" ? "bg-white/10 text-zinc-100" : ""}`}
+          aria-pressed={mode === "edit"}
+          onClick={() => changeMode("edit")}
         >
-          {!enabled
-            ? "Updating diagram…"
-            : mode === "edit"
-              ? "Click a node to find its source. Double-click to rename."
-              : mode === "add"
-                ? "Add a node, then connect it to your diagram."
-                : mode === "connect"
-                  ? !start
-                    ? "Choose the source node, then the destination."
-                    : !end
-                      ? `From ${start} · Now choose a destination.`
-                      : `${start} → ${end} · Click another node to change the destination.`
-                  : !start
-                    ? "Choose a starting node, then a destination."
-                    : !end
-                      ? `From ${start} · Now choose a destination.`
-                      : trace?.count
-                        ? `${start} → ${end} · ${trace.count}${trace.limited ? "+" : ""} path${trace.count === 1 ? "" : "s"}${trace.limited ? " (search limit reached)" : ""}`
-                        : `No path from ${start} to ${end}. Try swapping direction.`}
-        </p>
-        {error && (
-          <p
-            role="alert"
-            className="mt-2 break-words px-1 text-xs text-red-300"
-          >
-            {error}
-          </p>
-        )}
-        {mode === "add" && (
-          <AddNodeForm
-            enabled={enabled}
-            label={newLabel}
-            shape={shape}
-            labelRef={labelRef}
-            onLabelChange={setNewLabel}
-            onShapeChange={setShape}
-            onCreate={() => {
-              if (!enabled || !newLabel.trim()) return;
-              try {
-                const result = addFlowNode(code, graph, {
-                  label: newLabel,
-                  shape,
-                });
-                pendingNode.current = result.id;
-                setSelected(result.id);
-                onChange(result.code);
-                setNewLabel("");
-                changeMode("edit");
-                editButtonRef.current?.focus();
-              } catch (error) {
-                setError(
-                  error instanceof Error
-                    ? error.message
-                    : "Could not add the node.",
-                );
-              }
-            }}
-            onCancel={cancel}
-          />
-        )}
-        {mode === "connect" && (
-          <ConnectionForm
-            enabled={enabled}
-            nodes={graph.nodes}
-            start={start}
-            end={end}
-            label={edgeLabel}
-            connection={connection}
-            labelRef={labelRef}
-            onSourceChange={(id) => {
-              setEndpoints(end ? [id, end] : [id]);
-              setError(null);
-              onSelectNode(id);
-            }}
-            onDestinationChange={(id) => {
-              if (!start) return;
-              setEndpoints([start, id]);
-              setError(null);
-              onSelectNode(id);
-            }}
-            onLabelChange={setEdgeLabel}
-            onConnectionChange={setConnection}
-            onConnect={() => {
-              if (!enabled || !start || !end) return;
-              try {
-                onChange(
-                  connectFlowNodes(
-                    code,
-                    graph,
-                    start,
-                    end,
-                    edgeLabel,
-                    connection,
-                  ),
-                );
-                setSelected(end);
-                setEdgeLabel("");
-                changeMode("edit");
-                editButtonRef.current?.focus();
-              } catch (error) {
-                setError(
-                  error instanceof Error
-                    ? error.message
-                    : "Could not connect the nodes.",
-                );
-              }
-            }}
-            onCancel={cancel}
-          />
-        )}
-        {mode === "trace" && end && (
+          Edit nodes
+        </button>
+        <button
+          type="button"
+          className={`${flowButtonClass} ${mode === "add" ? "bg-white/10 text-zinc-100" : ""}`}
+          aria-pressed={mode === "add"}
+          disabled={!enabled}
+          onClick={() => changeMode("add")}
+        >
+          Add node
+        </button>
+        <button
+          type="button"
+          className={`${flowButtonClass} ${mode === "connect" ? "bg-white/10 text-zinc-100" : ""}`}
+          aria-pressed={mode === "connect"}
+          disabled={!enabled || graph.nodes.length < 2}
+          onClick={() => changeMode("connect")}
+        >
+          Connect
+        </button>
+        <button
+          type="button"
+          className={`${flowButtonClass} ${mode === "trace" ? "bg-white/10 text-zinc-100" : ""}`}
+          aria-pressed={mode === "trace"}
+          disabled={!enabled}
+          onClick={() => changeMode("trace")}
+        >
+          Follow flow
+        </button>
+        {(node || endpoints.length > 0) && (
           <button
             type="button"
-            className={`${flowButtonClass} mt-2`}
-            disabled={!enabled}
-            onClick={() => setEndpoints([end, start])}
-          >
-            Swap direction
-          </button>
-        )}
-        {mode === "edit" && node && (
-          <NodeInspector
-            key={node.id}
-            node={node}
-            code={code}
-            enabled={enabled}
-            renaming={renaming}
-            onRename={() => setRenaming(true)}
-            onEdit={(patch) => onEditNode(node.id, patch)}
-            onClose={() => {
+            className={flowButtonClass}
+            onClick={() => {
               setSelected(null);
+              setEndpoints([]);
               setRenaming(false);
+              setError(null);
+              pendingNode.current = null;
             }}
-          />
+          >
+            Clear
+          </button>
         )}
       </div>
-    </div>
+      <label className="mt-2 flex items-center gap-2 px-1 text-[11px] text-zinc-400">
+        Layout
+        <select
+          aria-label="Flowchart layout direction"
+          className={`${flowFieldClass} mt-0 min-w-0 flex-1`}
+          value={direction ?? ""}
+          disabled={!enabled || direction === null}
+          onChange={(event) => {
+            try {
+              onChange(
+                setFlowDirection(code, event.target.value as FlowDirection),
+              );
+              setError(null);
+            } catch (error) {
+              setError(
+                error instanceof Error
+                  ? error.message
+                  : "Could not change the layout.",
+              );
+            }
+          }}
+        >
+          {direction === null && <option value="">Current direction</option>}
+          <option value="TB">Top to bottom</option>
+          <option value="LR">Left to right</option>
+          <option value="BT">Bottom to top</option>
+          <option value="RL">Right to left</option>
+        </select>
+      </label>
+      <p
+        className="mt-2 max-w-80 break-words px-1 text-[11px] leading-relaxed text-zinc-400"
+        role="status"
+      >
+        {!enabled
+          ? "Updating diagram…"
+          : mode === "edit"
+            ? "Click a node to find its source. Double-click to rename."
+            : mode === "add"
+              ? "Add a node, then connect it to your diagram."
+              : mode === "connect"
+                ? !start
+                  ? "Choose the source node, then the destination."
+                  : !end
+                    ? `From ${start} · Now choose a destination.`
+                    : `${start} → ${end} · Click another node to change the destination.`
+                : !start
+                  ? "Choose a starting node, then a destination."
+                  : !end
+                    ? `From ${start} · Now choose a destination.`
+                    : trace?.count
+                      ? `${start} → ${end} · ${trace.count}${trace.limited ? "+" : ""} path${trace.count === 1 ? "" : "s"}${trace.limited ? " (search limit reached)" : ""}`
+                      : `No path from ${start} to ${end}. Try swapping direction.`}
+      </p>
+      {error && (
+        <p role="alert" className="mt-2 break-words px-1 text-xs text-red-300">
+          {error}
+        </p>
+      )}
+      {mode === "add" && (
+        <AddNodeForm
+          enabled={enabled}
+          label={newLabel}
+          shape={shape}
+          labelRef={labelRef}
+          onLabelChange={setNewLabel}
+          onShapeChange={setShape}
+          onCreate={() => {
+            if (!enabled || !newLabel.trim()) return;
+            try {
+              const result = addFlowNode(code, graph, {
+                label: newLabel,
+                shape,
+              });
+              pendingNode.current = result.id;
+              setSelected(result.id);
+              onChange(result.code);
+              setNewLabel("");
+              changeMode("edit");
+              editButtonRef.current?.focus();
+            } catch (error) {
+              setError(
+                error instanceof Error
+                  ? error.message
+                  : "Could not add the node.",
+              );
+            }
+          }}
+          onCancel={cancel}
+        />
+      )}
+      {mode === "connect" && (
+        <ConnectionForm
+          enabled={enabled}
+          nodes={graph.nodes}
+          start={start}
+          end={end}
+          label={edgeLabel}
+          connection={connection}
+          labelRef={labelRef}
+          onSourceChange={(id) => {
+            setEndpoints(end ? [id, end] : [id]);
+            setError(null);
+            onSelectNode(id);
+          }}
+          onDestinationChange={(id) => {
+            if (!start) return;
+            setEndpoints([start, id]);
+            setError(null);
+            onSelectNode(id);
+          }}
+          onLabelChange={setEdgeLabel}
+          onConnectionChange={setConnection}
+          onConnect={() => {
+            if (!enabled || !start || !end) return;
+            try {
+              onChange(
+                connectFlowNodes(
+                  code,
+                  graph,
+                  start,
+                  end,
+                  edgeLabel,
+                  connection,
+                ),
+              );
+              setSelected(end);
+              setEdgeLabel("");
+              changeMode("edit");
+              editButtonRef.current?.focus();
+            } catch (error) {
+              setError(
+                error instanceof Error
+                  ? error.message
+                  : "Could not connect the nodes.",
+              );
+            }
+          }}
+          onCancel={cancel}
+        />
+      )}
+      {mode === "trace" && end && (
+        <button
+          type="button"
+          className={`${flowButtonClass} mt-2`}
+          disabled={!enabled}
+          onClick={() => setEndpoints([end, start])}
+        >
+          Swap direction
+        </button>
+      )}
+      {mode === "edit" && node && (
+        <NodeInspector
+          key={node.id}
+          node={node}
+          code={code}
+          enabled={enabled}
+          renaming={renaming}
+          onRename={() => setRenaming(true)}
+          onEdit={(patch) => onEditNode(node.id, patch)}
+          onClose={() => {
+            setSelected(null);
+            setRenaming(false);
+          }}
+        />
+      )}
+    </FlowToolsPanel>
   );
 }
