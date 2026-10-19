@@ -62,7 +62,6 @@ export function Toolbar(props: ToolbarProps) {
           <span>
             mermagic<span className="brand-dot">.</span>
           </span>
-          <span className="studio-badge">STUDIO</span>
         </div>
         <div className="document-heading">
           <button
@@ -157,12 +156,15 @@ export function Toolbar(props: ToolbarProps) {
         </div>
       </header>
       <aside className="sidebar" aria-label="Diagram library">
-        <div className="workspace-label">
-          <span className="workspace-avatar">M</span>
-          <div>
-            <strong>Personal workspace</strong>
-            <span>Your ideas, connected.</span>
-          </div>
+        <div className="sidebar-actions">
+          <button
+            type="button"
+            className="button new-diagram"
+            onClick={props.onHistoryNew}
+          >
+            <Icon name="plus" />
+            <span>New diagram</span>
+          </button>
           <button
             type="button"
             className="icon-button sidebar-close"
@@ -172,14 +174,6 @@ export function Toolbar(props: ToolbarProps) {
             <Icon name="close" />
           </button>
         </div>
-        <button
-          type="button"
-          className="button new-diagram"
-          onClick={props.onHistoryNew}
-        >
-          <Icon name="plus" />
-          <span>New diagram</span>
-        </button>
         <nav className="library-tabs" aria-label="Library sections">
           {(
             [

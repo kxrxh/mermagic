@@ -121,15 +121,6 @@ input {
   width: 25px;
   height: 25px;
 }
-.studio-badge {
-  align-self: center;
-  color: var(--muted);
-  font-size: 8px;
-  letter-spacing: 1.2px;
-  font-weight: 600;
-  margin-left: 1px;
-  padding-top: 4px;
-}
 .document-heading {
   display: flex;
   min-width: 0;
@@ -221,36 +212,14 @@ input {
   border-right: 1px solid var(--border);
   background: #151619;
 }
-.workspace-label {
+.sidebar-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 25px 19px 22px;
-}
-.workspace-avatar {
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #424853;
-  background: #24272d;
-  color: var(--accent);
-  border-radius: 9px;
-  font-size: 12px;
-}
-.workspace-label strong {
-  display: block;
-  font-size: 12px;
-  font-weight: 500;
-}
-.workspace-label :where(div) > span {
-  display: block;
-  margin-top: 3px;
-  color: var(--faint);
-  font-size: 10px;
+  margin: 20px 18px 22px;
 }
 .new-diagram {
-  margin: 0 18px 22px;
+  flex: 1;
   background: #1c1f24;
   border-color: #2b2e35;
   justify-content: flex-start;
@@ -286,7 +255,7 @@ input {
   background: #24272d;
   color: var(--accent);
 }
-.library-tabs button > span {
+.library-tabs :where(button) > span {
   margin-left: auto;
   font-size: 10px;
   color: var(--faint);
@@ -1238,9 +1207,6 @@ input {
     font-size: 21px;
     gap: 8px;
   }
-  .studio-badge {
-    display: none;
-  }
   .document-heading {
     gap: 9px;
     padding: 0 20px;
@@ -1265,13 +1231,6 @@ input {
   }
   .file-badge {
     font-size: 8px;
-  }
-  .workspace-label {
-    padding-right: 10px;
-    padding-left: 14px;
-  }
-  .workspace-label strong {
-    font-size: 11px;
   }
   .app-statusbar > span:last-child {
     font-size: 8px;
@@ -1304,6 +1263,7 @@ input {
   }
   .sidebar-close {
     margin-left: auto;
+    flex-shrink: 0;
   }
   .sidebar {
     display: none;
